@@ -3,7 +3,6 @@ package com.example.audio_app;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
@@ -258,7 +257,9 @@ public class AudioHandler {
                 if (audioRecord.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING) {
                     audioRecord.stop();
                 }
-                audioRecord.release();
+                if (audioRecord != null) {
+                    audioRecord.release();
+                }
             } catch (IllegalStateException e) {
                 Log.e(TAG, "释放录音资源异常: " + e.getMessage());
             }
