@@ -26,4 +26,7 @@ public class Config {
     public static final float LONG_SILENCE_DURATION = 1.5f;
     public static final int SILENCE_THRESHOLD = 500;
     public static final int PRE_AUDIO_BUFFER_SIZE = 5;
+
+    // -------------------- 睡眠时间 --------------------
+    public static final int SLEEP_INTERVAL = 2000;
 }

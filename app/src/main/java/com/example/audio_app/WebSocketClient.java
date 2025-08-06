@@ -73,7 +73,7 @@ public class WebSocketClient {
                             // 回复结束后睡眠2秒.
                             try {
                                 Log.d(TAG, "睡眠开始!");
-                                Thread.sleep(2000);
+                                Thread.sleep(SLEEP_INTERVAL);
                                 Log.d(TAG, "睡眠完毕!");
                             } catch (InterruptedException e) {
                                 // Java睡眠需要处理中断异常.
