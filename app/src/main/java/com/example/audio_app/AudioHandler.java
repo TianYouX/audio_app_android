@@ -22,7 +22,7 @@ public class AudioHandler {
     private boolean isPlaying = false;
     private WebSocketClient webSocketClient;
     private final Context context;
-    private final Deque<byte[]> preAudioBuffer = new ArrayDeque<>(5);
+    private final Deque<byte[]> preAudioBuffer = new ArrayDeque<>(PRE_AUDIO_BUFFER_SIZE);
     private byte[] accumulatedAudio = new byte[0];
     private Long silenceStartTime = null;
     private boolean isVoiceActive = false;
@@ -46,14 +46,14 @@ public class AudioHandler {
 
         int bufferSize = AudioRecord.getMinBufferSize(
                 Config.RECORD_RATE,
-                AudioFormat.CHANNEL_IN_MONO,
+                RECORD_CHANNELS,
                 RECORD_FORMAT);
 
         try {
             audioRecord = new AudioRecord(
                     MediaRecorder.AudioSource.MIC,
                     Config.RECORD_RATE,
-                    AudioFormat.CHANNEL_IN_MONO,
+                    RECORD_CHANNELS,
                     RECORD_FORMAT,
                     bufferSize);
             if (audioRecord.getState() != AudioRecord.STATE_INITIALIZED) {
@@ -212,15 +212,15 @@ public class AudioHandler {
 
         int bufferSize = AudioTrack.getMinBufferSize(
                 Config.PLAYBACK_RATE,
-                AudioFormat.CHANNEL_OUT_MONO,
-                RECORD_FORMAT);
+                PLAYBACK_CHANNELS,
+                PLAYBACK_FORMAT);
 
         try {
             audioTrack = new AudioTrack(
                     AudioManager.STREAM_MUSIC,
                     Config.PLAYBACK_RATE,
-                    AudioFormat.CHANNEL_OUT_MONO,
-                    RECORD_FORMAT,
+                    PLAYBACK_CHANNELS,
+                    PLAYBACK_FORMAT,
                     bufferSize,
                     AudioTrack.MODE_STREAM);
 
