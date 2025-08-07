@@ -9,6 +9,9 @@ import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import android.util.Log;
 import androidx.annotation.NonNull;
+
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import okhttp3.Response;
 import static com.example.audio_app.Config.*;
@@ -20,6 +23,8 @@ public class WebSocketClient {
     private final AudioHandler audioHandler;
     private final OkHttpClient client;
     private boolean isConnected = false;
+    private final Queue<byte[]> audioQueue = new LinkedList<>();
+    private boolean isPlaying = false;
 
     public WebSocketClient(String sessionId, AudioHandler audioHandler) {
         this.audioHandler = audioHandler;
@@ -110,7 +115,31 @@ public class WebSocketClient {
     private void handleAudioDelta(JSONObject json) throws JSONException {
         String raw_pcm = json.getString("delta");
         byte[] pcmData = Base64.decode(raw_pcm, Base64.DEFAULT);
-        audioHandler.playAudio(pcmData);
+        synchronized (audioQueue) {
+            audioQueue.add(pcmData);
+            if (!isPlaying) {
+                playNextAudio();
+            }
+        }
+    }
+
+    private void playNextAudio() {
+        synchronized (audioQueue) {
+            if (audioQueue.isEmpty()) {
+                isPlaying = false;
+                return;
+            }
+
+            isPlaying = true;
+            byte[] pcmData = audioQueue.poll();
+
+            audioHandler.playAudio(pcmData, new AudioHandler.PlaybackListener() {
+                @Override
+                public void onPlaybackComplete() {
+                    playNextAudio();
+                }
+            });
+        }
     }
 
     public void sendAudioData(byte[] pcmData) {

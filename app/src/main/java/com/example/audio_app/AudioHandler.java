@@ -272,7 +272,9 @@ public class AudioHandler {
 
     private void sendAudioSegment(byte[] pcmData) {
         // 保存录音用作测试.
-//        saveRecordingToFile(pcmData);
+        if (pcmData.length > 0){
+            saveRecordingToFile(pcmData);
+        }
 
         if (webSocketClient != null) {
             webSocketClient.sendAudioData(pcmData);
@@ -308,7 +310,7 @@ public class AudioHandler {
         }
     }
 
-    public void playAudio(byte[] pcmData) {
+    public void playAudio(byte[] pcmData, PlaybackListener listener) {
         if (isPlaying) {
             stopPlayback();
         }
@@ -335,9 +337,15 @@ public class AudioHandler {
             isPlaying = true;
             audioTrack.play();
             audioTrack.write(pcmData, 0, pcmData.length);
+
+            listener.onPlaybackComplete();
         } catch (IllegalArgumentException e) {
             Log.e(TAG, "播放参数错误: " + e.getMessage());
         }
+    }
+
+    public interface PlaybackListener {
+        void onPlaybackComplete();
     }
 
     public void stopPlayback() {
