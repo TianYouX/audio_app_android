@@ -222,7 +222,7 @@ public class AudioHandler {
         float silenceDuration = (currentTime - silenceStartTime) / 1000f;
 
 
-        Log.d(TAG, "静默秒数："+silenceDuration);
+        //Log.d(TAG, "静默秒数："+silenceDuration);
         if (silenceDuration >= SHORT_SILENCE_DURATION && silenceDuration < LONG_SILENCE_DURATION) {
             // 短静默，发送audio但不commit.
             if (accumulatedAudio.length > 0) {

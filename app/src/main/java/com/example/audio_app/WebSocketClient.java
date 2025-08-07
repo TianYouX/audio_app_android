@@ -37,7 +37,7 @@ public class WebSocketClient {
 
         // 配置OkHttpClient (添加超时设置等).
         this.client = new OkHttpClient.Builder()
-                .pingInterval(30, TimeUnit.SECONDS)
+                .pingInterval(60, TimeUnit.SECONDS)
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .build();
 
