@@ -233,7 +233,6 @@ public class AudioHandler {
         } else if (silenceDuration >= LONG_SILENCE_DURATION) {
             // 长静默，发送audio并commit.
             Log.d(TAG, String.format("静默≥%.1fs，发送音频并 commit", LONG_SILENCE_DURATION));
-            accumulatedAudio = new byte[0];
             isVoiceActive = false;
             isRecording = false;
         }
@@ -246,6 +245,7 @@ public class AudioHandler {
             sendAudioSegment(accumulatedAudio);
         }
         sendCommit();
+        accumulatedAudio = new byte[0];
         safeReleaseAudioRecord();
 
         //------------回声消除AEC------------
