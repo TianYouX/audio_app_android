@@ -1,5 +1,9 @@
 package com.example.audio_app;
 
+import android.media.AudioAttributes;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioTrack;
 import android.util.Base64;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -25,6 +29,8 @@ public class WebSocketClient {
     private boolean isConnected = false;
     private final Queue<byte[]> audioQueue = new LinkedList<>();
     private boolean isPlaying = false;
+    private AudioTrack audioTrack;
+    private boolean isAudioTrackInitialized = false;
 
     public WebSocketClient(String sessionId, AudioHandler audioHandler) {
         this.audioHandler = audioHandler;
@@ -112,6 +118,34 @@ public class WebSocketClient {
         });
     }
 
+    private void initializeAudioTrack() {
+        if (isAudioTrackInitialized) return;
+
+        int bufferSize = AudioTrack.getMinBufferSize(
+                PLAYBACK_RATE,
+                PLAYBACK_CHANNELS,
+                PLAYBACK_FORMAT);
+
+        audioTrack = new AudioTrack(
+                new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build(),
+                new AudioFormat.Builder()
+                        .setSampleRate(PLAYBACK_RATE)
+                        .setChannelMask(PLAYBACK_CHANNELS)
+                        .setEncoding(PLAYBACK_FORMAT)
+                        .build(),
+                bufferSize,
+                AudioTrack.MODE_STREAM,
+                AudioManager.AUDIO_SESSION_ID_GENERATE);
+
+        if (audioTrack.getState() == AudioTrack.STATE_INITIALIZED) {
+            isAudioTrackInitialized = true;
+            audioTrack.play();
+        }
+    }
+
     private void handleAudioDelta(JSONObject json) throws JSONException {
         String raw_pcm = json.getString("delta");
         byte[] pcmData = Base64.decode(raw_pcm, Base64.DEFAULT);
@@ -133,12 +167,14 @@ public class WebSocketClient {
             isPlaying = true;
             byte[] pcmData = audioQueue.poll();
 
-            audioHandler.playAudio(pcmData, new AudioHandler.PlaybackListener() {
-                @Override
-                public void onPlaybackComplete() {
-                    playNextAudio();
-                }
-            });
+            // 确保AudioTrack已初始化
+            initializeAudioTrack();
+
+            // 直接写入音频数据到已初始化的AudioTrack
+            audioTrack.write(pcmData, 0, pcmData.length);
+
+            // 继续播放队列中的下一个音频片段
+            playNextAudio();
         }
     }
 
@@ -187,6 +223,12 @@ public class WebSocketClient {
         }
         if (client != null) {
             client.dispatcher().executorService().shutdown();
+        }
+        if (audioTrack != null) {
+            audioTrack.stop();
+            audioTrack.release();
+            audioTrack = null;
+            isAudioTrackInitialized = false;
         }
         isConnected = false;
     }

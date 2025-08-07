@@ -310,43 +310,43 @@ public class AudioHandler {
         }
     }
 
-    public void playAudio(byte[] pcmData, PlaybackListener listener) {
-        if (isPlaying) {
-            stopPlayback();
-        }
+//    public void playAudio(byte[] pcmData, PlaybackListener listener) {
+//        if (isPlaying) {
+//            stopPlayback();
+//        }
+//
+//        int bufferSize = AudioTrack.getMinBufferSize(
+//                PLAYBACK_RATE,
+//                PLAYBACK_CHANNELS,
+//                PLAYBACK_FORMAT);
+//
+//        try {
+//            audioTrack = new AudioTrack(
+//                    AudioManager.STREAM_MUSIC,
+//                    PLAYBACK_RATE,
+//                    PLAYBACK_CHANNELS,
+//                    PLAYBACK_FORMAT,
+//                    bufferSize,
+//                    AudioTrack.MODE_STREAM);
+//
+//            if (audioTrack.getState() != AudioTrack.STATE_INITIALIZED) {
+//                Log.e(TAG, "AudioTrack初始化失败");
+//                return;
+//            }
+//
+//            isPlaying = true;
+//            audioTrack.play();
+//            audioTrack.write(pcmData, 0, pcmData.length);
+//
+//            listener.onPlaybackComplete();
+//        } catch (IllegalArgumentException e) {
+//            Log.e(TAG, "播放参数错误: " + e.getMessage());
+//        }
+//    }
 
-        int bufferSize = AudioTrack.getMinBufferSize(
-                PLAYBACK_RATE,
-                PLAYBACK_CHANNELS,
-                PLAYBACK_FORMAT);
-
-        try {
-            audioTrack = new AudioTrack(
-                    AudioManager.STREAM_MUSIC,
-                    PLAYBACK_RATE,
-                    PLAYBACK_CHANNELS,
-                    PLAYBACK_FORMAT,
-                    bufferSize,
-                    AudioTrack.MODE_STREAM);
-
-            if (audioTrack.getState() != AudioTrack.STATE_INITIALIZED) {
-                Log.e(TAG, "AudioTrack初始化失败");
-                return;
-            }
-
-            isPlaying = true;
-            audioTrack.play();
-            audioTrack.write(pcmData, 0, pcmData.length);
-
-            listener.onPlaybackComplete();
-        } catch (IllegalArgumentException e) {
-            Log.e(TAG, "播放参数错误: " + e.getMessage());
-        }
-    }
-
-    public interface PlaybackListener {
-        void onPlaybackComplete();
-    }
+//    public interface PlaybackListener {
+//        void onPlaybackComplete();
+//    }
 
     public void stopPlayback() {
         if (audioTrack != null) {
