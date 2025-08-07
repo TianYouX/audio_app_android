@@ -53,17 +53,20 @@ public class AudioHandler {
     private void initAEC(int audioSessionId) {
         if (AcousticEchoCanceler.isAvailable()) {
             try {
+                if (aec != null) {
+                    aec.release();
+                }
                 aec = AcousticEchoCanceler.create(audioSessionId);
                 if (aec != null) {
                     aec.setEnabled(true);
                     aecEnabled = true;
-                    Log.d(TAG, "AEC initialized and enabled");
+                    Log.d(TAG, "AEC初始化成功");
                 }
             } catch (Exception e) {
-                Log.e(TAG, "AEC initialization failed: " + e.getMessage());
+                Log.e(TAG, "AEC初始化失败: " + e.getMessage());
             }
         } else {
-            Log.w(TAG, "AEC not available on this device");
+            Log.w(TAG, "此设备不支持AEC");
         }
     }
 
@@ -251,10 +254,13 @@ public class AudioHandler {
         safeReleaseAudioRecord();
 
         //------------回声消除AEC------------
-        // 释放AEC资源
         if (aec != null) {
-            aec.setEnabled(false);
-            aec.release();
+            try {
+                aec.setEnabled(false);
+                aec.release();
+            } catch (IllegalStateException e) {
+                Log.e(TAG, "AEC释放时出错: " + e.getMessage());
+            }
             aec = null;
             aecEnabled = false;
         }
@@ -309,44 +315,6 @@ public class AudioHandler {
             Log.d(TAG, "webSocketClient连接未就绪，commit失败");
         }
     }
-
-//    public void playAudio(byte[] pcmData, PlaybackListener listener) {
-//        if (isPlaying) {
-//            stopPlayback();
-//        }
-//
-//        int bufferSize = AudioTrack.getMinBufferSize(
-//                PLAYBACK_RATE,
-//                PLAYBACK_CHANNELS,
-//                PLAYBACK_FORMAT);
-//
-//        try {
-//            audioTrack = new AudioTrack(
-//                    AudioManager.STREAM_MUSIC,
-//                    PLAYBACK_RATE,
-//                    PLAYBACK_CHANNELS,
-//                    PLAYBACK_FORMAT,
-//                    bufferSize,
-//                    AudioTrack.MODE_STREAM);
-//
-//            if (audioTrack.getState() != AudioTrack.STATE_INITIALIZED) {
-//                Log.e(TAG, "AudioTrack初始化失败");
-//                return;
-//            }
-//
-//            isPlaying = true;
-//            audioTrack.play();
-//            audioTrack.write(pcmData, 0, pcmData.length);
-//
-//            listener.onPlaybackComplete();
-//        } catch (IllegalArgumentException e) {
-//            Log.e(TAG, "播放参数错误: " + e.getMessage());
-//        }
-//    }
-
-//    public interface PlaybackListener {
-//        void onPlaybackComplete();
-//    }
 
     public void stopPlayback() {
         if (audioTrack != null) {

@@ -104,10 +104,16 @@ public class MainActivity extends AppCompatActivity {
 
     // 关闭所有.
     public void closeAll(){
-        sessionManager.close();
-        if (audioHandler != null) {
-            audioHandler.stopRecording();
-            audioHandler.stopPlayback();
+        try {
+            if (sessionManager != null) {
+                sessionManager.close();
+            }
+            if (audioHandler != null) {
+                audioHandler.stopRecording();
+                audioHandler.stopPlayback();
+            }
+        } catch (Exception e) {
+            Log.e("MainActivity", "关闭资源时出错: " + e.getMessage());
         }
     }
 
