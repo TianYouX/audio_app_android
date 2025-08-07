@@ -23,10 +23,10 @@ public class Config {
 
     // -------------------- 音频检测参数 --------------------
     public static final float SHORT_SILENCE_DURATION = 0.5f;
-    public static final float LONG_SILENCE_DURATION = 1.5f;
-    public static final int SILENCE_THRESHOLD = 500;
+    public static final float LONG_SILENCE_DURATION = 2f;
+    public static final int SILENCE_THRESHOLD = 400;
     public static final int PRE_AUDIO_BUFFER_SIZE = 5;
 
     // -------------------- 睡眠时间 --------------------
-    public static final int SLEEP_INTERVAL = 2000;
+    public static final int SLEEP_INTERVAL = 0;
 }

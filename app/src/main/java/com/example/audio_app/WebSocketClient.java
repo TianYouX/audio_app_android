@@ -163,7 +163,7 @@ public class WebSocketClient {
     }
 
     // 将pcm转换成wav，加上正确的header.
-    private byte[] convertPcmToWav(byte[] pcmData) {
+    public byte[] convertPcmToWav(byte[] pcmData) {
         // wav header参数
         long totalDataLen = pcmData.length + 36; // 36 is the header size
         long byteRate = RECORD_RATE * 2; // SampleRate * NumChannels * BitsPerSample/8

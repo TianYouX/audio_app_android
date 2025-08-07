@@ -9,9 +9,19 @@ import android.media.AudioTrack;
 import android.media.MediaRecorder;
 import android.util.Log;
 import androidx.core.content.ContextCompat;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
+import java.util.Date;
 import java.util.Deque;
+import java.util.Locale;
+
 import static com.example.audio_app.Config.*;
+
+import android.media.audiofx.AcousticEchoCanceler;
 
 public class AudioHandler {
     private static final String TAG = "AudioHandler";
@@ -26,9 +36,46 @@ public class AudioHandler {
     private Long silenceStartTime = null;
     private boolean isVoiceActive = false;
 
+    // ------------回声消除AEC------------
+    private AcousticEchoCanceler aec;
+    private boolean aecEnabled = false;
+    // ------------回声消除AEC------------
+
+    private static final String RECORDINGS_DIR = "audio_recordings";
+    private int recordingCounter = 0;
+
     public AudioHandler(Context context) {
         this.context = context.getApplicationContext();
     }
+
+    // ------------回声消除AEC------------
+    // 初始化AEC.
+    private void initAEC(int audioSessionId) {
+        if (AcousticEchoCanceler.isAvailable()) {
+            try {
+                aec = AcousticEchoCanceler.create(audioSessionId);
+                if (aec != null) {
+                    aec.setEnabled(true);
+                    aecEnabled = true;
+                    Log.d(TAG, "AEC initialized and enabled");
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "AEC initialization failed: " + e.getMessage());
+            }
+        } else {
+            Log.w(TAG, "AEC not available on this device");
+        }
+    }
+
+    // 设置音频模式为通信模式.
+    private void setCommunicationAudioMode() {
+        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        if (am != null) {
+            am.setMode(AudioManager.MODE_IN_COMMUNICATION);
+            am.setSpeakerphoneOn(true);
+        }
+    }
+    // ------------回声消除AEC------------
 
     public void setWebSocketClient(WebSocketClient client) {
         this.webSocketClient = client;
@@ -44,17 +91,25 @@ public class AudioHandler {
         }
 
         int bufferSize = AudioRecord.getMinBufferSize(
-                Config.RECORD_RATE,
+                RECORD_RATE,
                 RECORD_CHANNELS,
                 RECORD_FORMAT);
 
         try {
             audioRecord = new AudioRecord(
-                    MediaRecorder.AudioSource.MIC,
-                    Config.RECORD_RATE,
+                    MediaRecorder.AudioSource.VOICE_COMMUNICATION, //------------回声消除AEC----(MediaRecorder.AudioSource.MIC
+                    RECORD_RATE,
                     RECORD_CHANNELS,
                     RECORD_FORMAT,
                     bufferSize);
+
+            //------------回声消除AEC------------
+            if (audioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
+                initAEC(audioRecord.getAudioSessionId());
+                setCommunicationAudioMode();
+            }
+            //------------回声消除AEC------------
+
             if (audioRecord.getState() != AudioRecord.STATE_INITIALIZED) {
                 Log.e(TAG, "AudioRecord初始化失败");
                 return;
@@ -68,7 +123,11 @@ public class AudioHandler {
     }
 
     private void recordingLoop() {
-        byte[] buffer = new byte[Config.FRAMES_PER_BUFFER];
+        byte[] buffer = new byte[FRAMES_PER_BUFFER];
+        //------------回声消除AEC------------
+        byte[] processedBuffer = new byte[FRAMES_PER_BUFFER];
+        //------------回声消除AEC------------
+
         audioRecord.startRecording();
         Log.d(TAG, "开始Recording Loop!");
 
@@ -83,6 +142,19 @@ public class AudioHandler {
                     }
                     continue;
                 }
+
+                //------------回声消除AEC------------
+                // 如果AEC启用，处理音频数据
+                if (aecEnabled) {
+                    System.arraycopy(buffer, 0, processedBuffer, 0, bytesRead);
+                    // 这里可以添加更复杂的AEC处理逻辑
+                    // 目前只是简单传递，硬件AEC已经在底层工作
+                } else {
+                    System.arraycopy(buffer, 0, processedBuffer, 0, bytesRead);
+                }
+                buffer = processedBuffer;
+                //------------回声消除AEC------------
+
                 processAudioChunk(buffer, bytesRead);
             }
         } finally {
@@ -129,9 +201,9 @@ public class AudioHandler {
             Log.d(TAG, "检测到声音，开始录音，包含预缓存");
         } else {
             // 继续累计声音.
-            byte[] newBuffer = new byte[accumulatedAudio.length + Config.FRAMES_PER_BUFFER];
+            byte[] newBuffer = new byte[accumulatedAudio.length + FRAMES_PER_BUFFER];
             System.arraycopy(accumulatedAudio, 0, newBuffer, 0, accumulatedAudio.length);
-            System.arraycopy(preAudioBuffer.getLast(), 0, newBuffer, accumulatedAudio.length, Config.FRAMES_PER_BUFFER);
+            System.arraycopy(preAudioBuffer.getLast(), 0, newBuffer, accumulatedAudio.length, FRAMES_PER_BUFFER);
             accumulatedAudio = newBuffer;
         }
     }
@@ -151,7 +223,7 @@ public class AudioHandler {
         if (silenceDuration >= SHORT_SILENCE_DURATION && silenceDuration < LONG_SILENCE_DURATION) {
             // 短静默，发送audio但不commit.
             if (accumulatedAudio.length > 0) {
-                if (accumulatedAudio.length > (5 + 1 + 1) * Config.FRAMES_PER_BUFFER) {
+                if (accumulatedAudio.length > (5 + 1 + 1) * FRAMES_PER_BUFFER) {
                     Log.d(TAG, String.format("静默≥%.1fs，先发送音频（不 commit）", SHORT_SILENCE_DURATION));
                     sendAudioSegment(accumulatedAudio);
                 } else {
@@ -177,6 +249,16 @@ public class AudioHandler {
         }
         sendCommit();
         safeReleaseAudioRecord();
+
+        //------------回声消除AEC------------
+        // 释放AEC资源
+        if (aec != null) {
+            aec.setEnabled(false);
+            aec.release();
+            aec = null;
+            aecEnabled = false;
+        }
+        //------------回声消除AEC------------
     }
 
     private float calculateRms(byte[] audioData, int length) {
@@ -189,10 +271,32 @@ public class AudioHandler {
     }
 
     private void sendAudioSegment(byte[] pcmData) {
+        // 保存录音用作测试.
+//        saveRecordingToFile(pcmData);
+
         if (webSocketClient != null) {
             webSocketClient.sendAudioData(pcmData);
         }else{
             Log.d(TAG, "webSocketClient连接未就绪，发送audio失败");
+        }
+    }
+
+    // 保存录音用作测试.
+    private void saveRecordingToFile(byte[] pcmData) {
+        File recordingsDir = new File(context.getExternalFilesDir(null), RECORDINGS_DIR);
+        if (!recordingsDir.exists()) {
+            recordingsDir.mkdirs();
+        }
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String fileName = "recording_" + timeStamp + ".wav";
+        File outputFile = new File(recordingsDir, fileName);
+
+        try (FileOutputStream fos = new FileOutputStream(outputFile)) {
+            byte[] wavData = webSocketClient.convertPcmToWav(pcmData);
+            fos.write(wavData);
+            Log.d(TAG, "录音已保存: " + outputFile.getAbsolutePath());
+        } catch (IOException e) {
+            Log.e(TAG, "保存录音失败", e);
         }
     }
 
@@ -210,14 +314,14 @@ public class AudioHandler {
         }
 
         int bufferSize = AudioTrack.getMinBufferSize(
-                Config.PLAYBACK_RATE,
+                PLAYBACK_RATE,
                 PLAYBACK_CHANNELS,
                 PLAYBACK_FORMAT);
 
         try {
             audioTrack = new AudioTrack(
                     AudioManager.STREAM_MUSIC,
-                    Config.PLAYBACK_RATE,
+                    PLAYBACK_RATE,
                     PLAYBACK_CHANNELS,
                     PLAYBACK_FORMAT,
                     bufferSize,

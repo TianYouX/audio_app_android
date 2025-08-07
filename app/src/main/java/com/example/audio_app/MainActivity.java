@@ -20,22 +20,22 @@ public class MainActivity extends AppCompatActivity {
     private SessionManager sessionManager;
     private ActivityMainBinding binding;
 
-    // 测试回音消除------------
+    // ------------测试回音消除------------
     private MediaPlayer mediaPlayer;
     private Button playButton;
     private boolean isPlaying = false;
-    // 测试回音消除------------
+    // ------------测试回音消除------------
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // 测试回音消除------------
+        // ------------测试回音消除------------
         mediaPlayer = MediaPlayer.create(this, R.raw.aec_testing);
         mediaPlayer.setLooping(true);
         playButton = findViewById(R.id.playButton);
-        // 测试回音消除------------
+        // ------------测试回音消除------------
 
         //gif.
         binding = ActivityMainBinding.inflate(getLayoutInflater());
@@ -111,7 +111,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // 测试回音消除------------
+    // ------------测试回音消除------------
     public void aec(View view){
         if (isPlaying) {
             // 如果正在播放，停止播放
@@ -127,18 +127,18 @@ public class MainActivity extends AppCompatActivity {
             Log.d("MainActivityCheck", "开始播放音频");
         }
     }
-    // 测试回音消除------------
+    // ------------测试回音消除------------
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         closeAll();
 
-        // 测试回音消除------------
+        // ------------测试回音消除------------
         if (mediaPlayer != null) {
             mediaPlayer.release();
             mediaPlayer = null;
         }
-        // 测试回音消除------------
+        // ------------测试回音消除------------
     }
 }
