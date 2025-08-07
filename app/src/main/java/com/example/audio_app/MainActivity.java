@@ -13,6 +13,7 @@ import com.bumptech.glide.Glide;
 import com.example.audio_app.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
+    private static final String TAG = "MainActivityCheck";
     private Button recordButton;
     private Button sessionButton;
     private TextView statusText;
@@ -110,8 +111,9 @@ public class MainActivity extends AppCompatActivity {
             }
             if (audioHandler != null) {
                 audioHandler.stopRecording();
-                audioHandler.stopPlayback();
+//                audioHandler.stopPlayback();
             }
+            Log.d(TAG, "交流停止");
         } catch (Exception e) {
             Log.e("MainActivity", "关闭资源时出错: " + e.getMessage());
         }
@@ -124,13 +126,13 @@ public class MainActivity extends AppCompatActivity {
             mediaPlayer.pause();
             playButton.setText("播放");
             isPlaying = false;
-            Log.d("MainActivityCheck", "正在播放，停止音频");
+            Log.d(TAG, "停止音频");
         } else {
             // 如果没有播放，开始播放
             mediaPlayer.start();
             playButton.setText("停止");
             isPlaying = true;
-            Log.d("MainActivityCheck", "开始播放音频");
+            Log.d(TAG, "开始播放音频");
         }
     }
     // ------------测试回音消除------------

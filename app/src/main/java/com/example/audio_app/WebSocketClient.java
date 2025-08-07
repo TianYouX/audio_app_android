@@ -66,7 +66,7 @@ public class WebSocketClient {
 
                     switch (type) {
                         case "error":
-                            Log.e(TAG, "服务器返回错误: " + json.optString("error"));
+                            Log.w(TAG, "服务器返回错误: " + json.optString("error"));
                             break;
                         case "response.audio.delta":
                             Log.d(TAG, "收到audio delta: " + type);
@@ -230,6 +230,7 @@ public class WebSocketClient {
             audioTrack = null;
             isAudioTrackInitialized = false;
         }
+        Log.d(TAG, "停止audioTrack");
         isConnected = false;
     }
 

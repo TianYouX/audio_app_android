@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.AudioRecord;
-import android.media.AudioTrack;
 import android.media.MediaRecorder;
 import android.util.Log;
 import androidx.core.content.ContextCompat;
@@ -26,9 +25,7 @@ import android.media.audiofx.AcousticEchoCanceler;
 public class AudioHandler {
     private static final String TAG = "AudioHandler";
     private AudioRecord audioRecord;
-    private AudioTrack audioTrack;
     private boolean isRecording = false;
-    private boolean isPlaying = false;
     private WebSocketClient webSocketClient;
     private final Context context;
     private final Deque<byte[]> preAudioBuffer = new ArrayDeque<>(PRE_AUDIO_BUFFER_SIZE);
@@ -42,7 +39,6 @@ public class AudioHandler {
     // ------------回声消除AEC------------
 
     private static final String RECORDINGS_DIR = "audio_recordings";
-    private int recordingCounter = 0;
 
     public AudioHandler(Context context) {
         this.context = context.getApplicationContext();
@@ -239,7 +235,6 @@ public class AudioHandler {
             Log.d(TAG, String.format("静默≥%.1fs，发送音频并 commit", LONG_SILENCE_DURATION));
             accumulatedAudio = new byte[0];
             isVoiceActive = false;
-
             isRecording = false;
         }
     }
@@ -314,21 +309,6 @@ public class AudioHandler {
         }else{
             Log.d(TAG, "webSocketClient连接未就绪，commit失败");
         }
-    }
-
-    public void stopPlayback() {
-        if (audioTrack != null) {
-            try {
-                if (audioTrack.getPlayState() == AudioTrack.PLAYSTATE_PLAYING) {
-                    audioTrack.stop();
-                }
-                audioTrack.release();
-            } catch (IllegalStateException e) {
-                Log.e(TAG, "停止播放异常: " + e.getMessage());
-            }
-            audioTrack = null;
-        }
-        isPlaying = false;
     }
 
     private void safeReleaseAudioRecord() {
