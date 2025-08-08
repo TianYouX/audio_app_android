@@ -113,7 +113,17 @@ public class WebSocketClient {
             public void onFailure(@NonNull WebSocket webSocket, @NonNull Throwable t, Response response) {
                 super.onFailure(webSocket, t, response);
                 isConnected = false;
-                Log.e(TAG, "连接失败: " + t.getMessage());
+
+                // 详细记录错误信息.
+                Log.e(TAG, "连接失败详情:");
+                Log.e(TAG, "错误信息: " + t.getMessage());
+                Log.e(TAG, "错误类型: " + t.getClass().getSimpleName());
+                if (response != null) {
+                    Log.e(TAG, "响应码: " + response.code());
+                    Log.e(TAG, "响应信息: " + response.message());
+                }
+
+
             }
         });
     }
