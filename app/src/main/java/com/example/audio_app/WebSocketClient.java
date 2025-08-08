@@ -23,6 +23,9 @@ import static com.example.audio_app.Config.*;
 public class WebSocketClient {
     private static final String TAG = "WebSocketClient";
     private static final int NORMAL_CLOSURE_STATUS = 1000;
+    private static final int MAX_RECONNECT_ATTEMPTS = 5; // 最大重连次数
+    private static final long RECONNECT_DELAY_MS = 1000; // 重连延迟时间
+
     private WebSocket webSocket;
     private final AudioHandler audioHandler;
     private final OkHttpClient client;
@@ -32,8 +35,15 @@ public class WebSocketClient {
     private AudioTrack audioTrack;
     private boolean isAudioTrackInitialized = false;
 
+    // 重连相关字段
+    private String sessionId;
+    private boolean shouldReconnect = true;
+    private int reconnectAttempts = 0;
+    private final Object reconnectLock = new Object();
+
     public WebSocketClient(String sessionId, AudioHandler audioHandler) {
         this.audioHandler = audioHandler;
+        this.sessionId = sessionId;
 
         // 配置OkHttpClient (添加超时设置等).
         this.client = new OkHttpClient.Builder()
@@ -45,6 +55,12 @@ public class WebSocketClient {
     }
 
     private void connect(String sessionId) {
+        synchronized (reconnectLock) {
+            if (webSocket != null) {
+                webSocket.cancel();
+            }
+        }
+
         Request request = new Request.Builder()
                 .url(WS_BASE_URL + "/v1/realtime/sessions/" + sessionId)
                 .addHeader("Authorization", "Bearer " + AUTHORIZATION_TOKEN)
@@ -55,6 +71,7 @@ public class WebSocketClient {
             public void onOpen(@NonNull WebSocket webSocket, @NonNull Response response) {
                 super.onOpen(webSocket, response);
                 isConnected = true;
+                reconnectAttempts = 0; // 连接成功后重置重连计数
                 Log.d(TAG, "WebSocket连接已建立");
             }
 
@@ -107,6 +124,11 @@ public class WebSocketClient {
                 super.onClosed(webSocket, code, reason);
                 isConnected = false;
                 Log.d(TAG, "连接关闭: " + reason);
+
+                // 如果不是正常关闭，尝试重连
+                if (code != NORMAL_CLOSURE_STATUS && shouldReconnect) {
+                    scheduleReconnect();
+                }
             }
 
             @Override
@@ -123,9 +145,36 @@ public class WebSocketClient {
                     Log.e(TAG, "响应信息: " + response.message());
                 }
 
-
+                // 连接失败时尝试重连
+                if (shouldReconnect) {
+                    scheduleReconnect();
+                }
             }
         });
+    }
+
+    // 调度重连
+    private void scheduleReconnect() {
+        synchronized (reconnectLock) {
+            if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                Log.e(TAG, "达到最大重连次数，停止重连");
+                return;
+            }
+
+            reconnectAttempts++;
+            Log.d(TAG, "计划重连，第 " + reconnectAttempts + " 次尝试");
+
+            // 使用Handler延迟执行重连
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if (shouldReconnect && !isConnected) {
+                        Log.d(TAG, "执行重连...");
+                        connect(sessionId);
+                    }
+                }
+            }, RECONNECT_DELAY_MS);
+        }
     }
 
     private void initializeAudioTrack() {
@@ -228,6 +277,10 @@ public class WebSocketClient {
     }
 
     public void close() {
+        synchronized (reconnectLock) {
+            shouldReconnect = false; // 停止自动重连
+        }
+        
         if (webSocket != null) {
             webSocket.close(NORMAL_CLOSURE_STATUS, "用户主动关闭");
         }
