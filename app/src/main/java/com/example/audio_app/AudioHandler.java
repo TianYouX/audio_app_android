@@ -151,10 +151,16 @@ public class AudioHandler {
                 } else {
                     System.arraycopy(buffer, 0, processedBuffer, 0, bytesRead);
                 }
-                buffer = processedBuffer;
+//                buffer = processedBuffer;
                 //------------回声消除AEC------------
 
-                processAudioChunk(buffer, bytesRead);
+//                processAudioChunk(buffer, bytesRead);
+
+                // 创建实际长度的音频数据副本
+                byte[] actualData = new byte[bytesRead];
+                System.arraycopy(processedBuffer, 0, actualData, 0, bytesRead);
+                processAudioChunk(actualData, bytesRead);
+
             }
         } finally {
             // 停止录音并发送剩下语音.
@@ -199,10 +205,16 @@ public class AudioHandler {
             accumulatedAudio = result;
             Log.d(TAG, "检测到声音，开始录音，包含预缓存");
         } else {
-            // 继续累计声音.
-            byte[] newBuffer = new byte[accumulatedAudio.length + FRAMES_PER_BUFFER];
+//            // 继续累计声音.
+//            byte[] newBuffer = new byte[accumulatedAudio.length + FRAMES_PER_BUFFER];
+//            System.arraycopy(accumulatedAudio, 0, newBuffer, 0, accumulatedAudio.length);
+//            System.arraycopy(preAudioBuffer.getLast(), 0, newBuffer, accumulatedAudio.length, FRAMES_PER_BUFFER);
+//            accumulatedAudio = newBuffer;
+
+            byte[] lastBuffer = preAudioBuffer.getLast();
+            byte[] newBuffer = new byte[accumulatedAudio.length + lastBuffer.length];
             System.arraycopy(accumulatedAudio, 0, newBuffer, 0, accumulatedAudio.length);
-            System.arraycopy(preAudioBuffer.getLast(), 0, newBuffer, accumulatedAudio.length, FRAMES_PER_BUFFER);
+            System.arraycopy(lastBuffer, 0, newBuffer, accumulatedAudio.length, lastBuffer.length);
             accumulatedAudio = newBuffer;
         }
     }
@@ -286,6 +298,36 @@ public class AudioHandler {
 
     // 保存录音用作测试.
     private void saveRecordingToFile(byte[] pcmData) {
+        int length = pcmData.length;
+
+        if (pcmData == null || length <= 0) {
+            Log.w(TAG, "音频数据无效");
+            return;
+        }
+
+        // 检查数据长度
+        if (length % 2 != 0) {
+            Log.w(TAG, "音频数据长度不是偶数: " + length);
+        }
+
+        // 计算RMS值
+        float rms = calculateRms(pcmData, length);
+
+        // 检查是否有静音数据
+        boolean isSilent = rms < 10; // 非常小的RMS值可能表示静音
+
+        // 检查数据范围
+        short maxSample = 0;
+        short minSample = 0;
+        for (int i = 0; i < length; i += 2) {
+            short sample = (short) ((pcmData[i + 1] << 8) | pcmData[i]);
+            if (sample > maxSample) maxSample = sample;
+            if (sample < minSample) minSample = sample;
+        }
+
+        Log.d(TAG, String.format("音频质量检查 - 长度: %d, RMS: %.2f, 范围: [%d, %d], 静音: %s",
+                length, rms, minSample, maxSample, isSilent));
+
         File recordingsDir = new File(context.getExternalFilesDir(null), RECORDINGS_DIR);
         if (!recordingsDir.exists()) {
             recordingsDir.mkdirs();
@@ -297,9 +339,12 @@ public class AudioHandler {
         try (FileOutputStream fos = new FileOutputStream(outputFile)) {
             byte[] wavData = webSocketClient.convertPcmToWav(pcmData);
             fos.write(wavData);
-            Log.d(TAG, "录音已保存: " + outputFile.getAbsolutePath());
+            fos.flush();
+            Log.d(TAG, "录音已保存: " + outputFile.getAbsolutePath() + ", 大小: " + wavData.length + " 字节");
         } catch (IOException e) {
             Log.e(TAG, "保存录音失败", e);
+        } catch (Exception e) {
+            Log.e(TAG, "转换或保存录音时发生未知错误", e);
         }
     }
 
