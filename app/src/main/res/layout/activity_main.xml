@@ -23,25 +23,25 @@
         android:text="WELCOME!!!"
         android:textStyle="bold"
         android:textSize="25sp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="32dp"
         android:textColor="#777777"/>
 
     <Button
         android:id="@+id/session_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="32dp"
         android:text="初始化"
         android:textSize="25sp"
-        android:onClick="initAll"/>
+        android:onClick="initAll"
+        android:visibility="gone"/>
 
     <Button
         android:id="@+id/record_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="32dp"
         android:textSize="25sp"
-        android:enabled="false"
         android:onClick="startChatting"/>
 
     <Button

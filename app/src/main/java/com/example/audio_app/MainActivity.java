@@ -89,6 +89,8 @@ public class MainActivity extends AppCompatActivity {
     // 开始交流.
     public void startChatting(View view) {
         if(recordButton.getText() == "开始交流"){
+            initAll(view);
+
             // 开始录音.
             audioHandler.startRecording();
 
@@ -100,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
             //关闭会话
             closeAll();
             statusText.setText("会话已关闭");
-            recordButton.setEnabled(false);
+//            recordButton.setEnabled(false);
 
             // ui表现.
             binding.gifView.setVisibility(View.INVISIBLE);
