@@ -73,7 +73,8 @@ public class MainActivity extends AppCompatActivity {
                 // 设置相互引用.
                 audioHandler.setWebSocketClient(sessionManager.getWebSocketClient());
 
-                runOnUiThread(() -> statusText.setText("Session ID: " + sessionManager.getSessionId()));
+                String statusString = "Session ID: " + sessionManager.getSessionId();
+                runOnUiThread(() -> statusText.setText(statusString));
             } else {
                 runOnUiThread(() -> {
                     statusText.setText("会话创建失败");

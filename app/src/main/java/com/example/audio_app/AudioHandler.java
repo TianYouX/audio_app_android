@@ -96,7 +96,7 @@ public class AudioHandler {
 
         try {
             audioRecord = new AudioRecord(
-                    MediaRecorder.AudioSource.VOICE_COMMUNICATION, //------------回声消除AEC----(MediaRecorder.AudioSource.MIC
+                    MediaRecorder.AudioSource.VOICE_COMMUNICATION, //------------回声消除AEC(MediaRecorder.AudioSource.MIC
                     RECORD_RATE,
                     RECORD_CHANNELS,
                     RECORD_FORMAT,
