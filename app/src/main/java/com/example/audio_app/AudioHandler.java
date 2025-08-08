@@ -151,16 +151,10 @@ public class AudioHandler {
                 } else {
                     System.arraycopy(buffer, 0, processedBuffer, 0, bytesRead);
                 }
-//                buffer = processedBuffer;
+                buffer = processedBuffer;
                 //------------回声消除AEC------------
 
-//                processAudioChunk(buffer, bytesRead);
-
-                // 创建实际长度的音频数据副本
-                byte[] actualData = new byte[bytesRead];
-                System.arraycopy(processedBuffer, 0, actualData, 0, bytesRead);
-                processAudioChunk(actualData, bytesRead);
-
+                processAudioChunk(buffer, bytesRead);
             }
         } finally {
             // 停止录音并发送剩下语音.
@@ -205,16 +199,10 @@ public class AudioHandler {
             accumulatedAudio = result;
             Log.d(TAG, "检测到声音，开始录音，包含预缓存");
         } else {
-//            // 继续累计声音.
-//            byte[] newBuffer = new byte[accumulatedAudio.length + FRAMES_PER_BUFFER];
-//            System.arraycopy(accumulatedAudio, 0, newBuffer, 0, accumulatedAudio.length);
-//            System.arraycopy(preAudioBuffer.getLast(), 0, newBuffer, accumulatedAudio.length, FRAMES_PER_BUFFER);
-//            accumulatedAudio = newBuffer;
-
-            byte[] lastBuffer = preAudioBuffer.getLast();
-            byte[] newBuffer = new byte[accumulatedAudio.length + lastBuffer.length];
+            // 继续累计声音.
+            byte[] newBuffer = new byte[accumulatedAudio.length + FRAMES_PER_BUFFER];
             System.arraycopy(accumulatedAudio, 0, newBuffer, 0, accumulatedAudio.length);
-            System.arraycopy(lastBuffer, 0, newBuffer, accumulatedAudio.length, lastBuffer.length);
+            System.arraycopy(preAudioBuffer.getLast(), 0, newBuffer, accumulatedAudio.length, FRAMES_PER_BUFFER);
             accumulatedAudio = newBuffer;
         }
     }
