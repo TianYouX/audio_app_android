@@ -1,16 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/home_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
     android:gravity="center"
-    android:background="#e5ffff">
+    android:background="#e5ffff"
+    >
 
     <ImageView
         android:id="@+id/gif_view"
-        android:layout_width="wrap_content"
-        android:layout_height="280dp"
+        android:scaleType="centerCrop"
+        android:layout_width="match_parent"
+        android:layout_height="400dp"
         android:visibility="gone"/>
 
     <TextView
@@ -18,8 +21,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="WELCOME!!!"
+        android:textStyle="bold"
         android:textSize="25sp"
-        android:layout_marginTop="16dp"/>
+        android:layout_marginTop="16dp"
+        android:textColor="#777777"/>
 
     <Button
         android:id="@+id/session_button"
@@ -46,6 +51,7 @@
         android:layout_marginTop="16dp"
         android:textSize="25sp"
         android:text="回声消除测试"
-        android:onClick="aec"/>
+        android:onClick="aec"
+        android:visibility="gone"/>
 
 </LinearLayout>

@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -17,6 +18,7 @@ public class MainActivity extends AppCompatActivity {
     private Button recordButton;
     private Button sessionButton;
     private TextView statusText;
+    private LinearLayout homeLayout;
     private AudioHandler audioHandler;
     private SessionManager sessionManager;
     private ActivityMainBinding binding;
@@ -50,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
         sessionButton = findViewById(R.id.session_button);
         recordButton = findViewById(R.id.record_button);
         statusText = findViewById(R.id.status_text);
+        homeLayout = findViewById(R.id.home_layout);
 
         audioHandler = new AudioHandler(getApplicationContext());
         sessionManager = new SessionManager();
@@ -91,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
 
             // ui表现.
             binding.gifView.setVisibility(View.VISIBLE);
+            homeLayout.setBackgroundColor(android.graphics.Color.parseColor("#101122"));
             recordButton.setText("停止交流");
         }else{
             //关闭会话
@@ -100,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
 
             // ui表现.
             binding.gifView.setVisibility(View.INVISIBLE);
+            homeLayout.setBackgroundColor(android.graphics.Color.parseColor("#e5ffff"));
             recordButton.setText("开始交流");
         }
     }
