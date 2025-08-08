@@ -1,10 +1,14 @@
 package com.example.audio_app;
 
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -22,6 +26,7 @@ public class MainActivity extends AppCompatActivity {
     private AudioHandler audioHandler;
     private SessionManager sessionManager;
     private ActivityMainBinding binding;
+    private ImageView staticPic;
 
     // ------------测试回音消除------------
     private MediaPlayer mediaPlayer;
@@ -32,6 +37,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // 隐藏状态栏和导航栏
+        View decorView = getWindow().getDecorView();
+        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+        decorView.setSystemUiVisibility(uiOptions);
+
         setContentView(R.layout.activity_main);
 
         // ------------测试回音消除------------
@@ -46,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
         Glide.with(this)
                 .asGif()
                 .load(R.drawable.ai_voice_pic)
+                .placeholder(R.drawable.static_ai_voice_pic)
                 .into(binding.gifView);
 
 
@@ -53,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
         recordButton = findViewById(R.id.record_button);
         statusText = findViewById(R.id.status_text);
         homeLayout = findViewById(R.id.home_layout);
+        staticPic = findViewById(R.id.static_pic);
 
         audioHandler = new AudioHandler(getApplicationContext());
         sessionManager = new SessionManager();
@@ -62,8 +76,6 @@ public class MainActivity extends AppCompatActivity {
     // 初始化：创建会话，创建websocket客户端，设置相互引用.
     public void initAll(View view) {
         closeAll();
-        binding.gifView.setVisibility(View.INVISIBLE);
-        recordButton.setText("开始交流");
 
         new Thread(() -> {
             if (sessionManager.createSession()) {
@@ -96,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
 
             // ui表现.
             binding.gifView.setVisibility(View.VISIBLE);
-            homeLayout.setBackgroundColor(android.graphics.Color.parseColor("#101122"));
+            staticPic.setVisibility(View.GONE);
             recordButton.setText("停止交流");
         }else{
             //关闭会话
@@ -105,8 +117,8 @@ public class MainActivity extends AppCompatActivity {
 //            recordButton.setEnabled(false);
 
             // ui表现.
-            binding.gifView.setVisibility(View.INVISIBLE);
-            homeLayout.setBackgroundColor(android.graphics.Color.parseColor("#e5ffff"));
+            binding.gifView.setVisibility(View.GONE);
+            staticPic.setVisibility(View.VISIBLE);
             recordButton.setText("开始交流");
         }
     }
@@ -119,7 +131,6 @@ public class MainActivity extends AppCompatActivity {
             }
             if (audioHandler != null) {
                 audioHandler.stopRecording();
-//                audioHandler.stopPlayback();
             }
             Log.d(TAG, "交流停止");
         } catch (Exception e) {

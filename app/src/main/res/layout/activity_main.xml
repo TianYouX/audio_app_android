@@ -6,15 +6,22 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:background="#e5ffff"
+    android:background="#101122"
     >
 
     <ImageView
         android:id="@+id/gif_view"
         android:scaleType="centerCrop"
         android:layout_width="match_parent"
-        android:layout_height="400dp"
+        android:layout_height="500dp"
         android:visibility="gone"/>
+
+    <ImageView
+        android:id="@+id/static_pic"
+        android:scaleType="centerCrop"
+        android:layout_width="match_parent"
+        android:layout_height="500dp"
+        android:src="@drawable/static_ai_voice_pic"/>
 
     <TextView
         android:id="@+id/status_text"
@@ -24,7 +31,8 @@
         android:textStyle="bold"
         android:textSize="25sp"
         android:layout_marginTop="32dp"
-        android:textColor="#777777"/>
+        android:textColor="#777777"
+        android:visibility="gone"/>
 
     <Button
         android:id="@+id/session_button"
@@ -40,7 +48,7 @@
         android:id="@+id/record_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="0dp"
         android:textSize="25sp"
         android:onClick="startChatting"/>
 

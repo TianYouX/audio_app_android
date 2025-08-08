@@ -251,11 +251,23 @@ public class AudioHandler {
         //------------回声消除AEC------------
         if (aec != null) {
             try {
-                aec.setEnabled(false);
+                if (aecEnabled) {
+                    aec.setEnabled(false);
+                }
+            } catch (IllegalStateException e) {
+                Log.e(TAG, "AEC禁用时出错: " + e.getMessage());
+            } catch (Exception e) {
+                Log.e(TAG, "AEC禁用时发生未知错误: " + e.getMessage());
+            }
+
+            try {
                 aec.release();
             } catch (IllegalStateException e) {
                 Log.e(TAG, "AEC释放时出错: " + e.getMessage());
+            } catch (Exception e) {
+                Log.e(TAG, "AEC释放时发生未知错误: " + e.getMessage());
             }
+
             aec = null;
             aecEnabled = false;
         }
@@ -288,7 +300,7 @@ public class AudioHandler {
     private void saveRecordingToFile(byte[] pcmData) {
         int length = pcmData.length;
 
-        if (pcmData == null || length <= 0) {
+        if (length <= 0) {
             Log.w(TAG, "音频数据无效");
             return;
         }
