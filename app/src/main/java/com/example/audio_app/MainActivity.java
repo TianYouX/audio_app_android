@@ -19,11 +19,10 @@ import androidx.core.content.ContextCompat;
 import com.bumptech.glide.Glide;
 import com.example.audio_app.databinding.ActivityMainBinding;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements WebSocketClient.ReconnectFailedCallback {
     private static final String TAG = "MainActivityCheck";
     private Button recordButton;
     private Button sessionButton;
-    private TextView statusText;
     private LinearLayout homeLayout;
     private AudioHandler audioHandler;
     private SessionManager sessionManager;
@@ -72,12 +71,12 @@ public class MainActivity extends AppCompatActivity {
 
         sessionButton = findViewById(R.id.session_button);
         recordButton = findViewById(R.id.record_button);
-        statusText = findViewById(R.id.status_text);
         homeLayout = findViewById(R.id.home_layout);
         staticPic = findViewById(R.id.static_pic);
 
         audioHandler = new AudioHandler(getApplicationContext());
         sessionManager = new SessionManager();
+        sessionManager.setReconnectFailedCallback(this); // 设置回调
         recordButton.setText("开始交流");
     }
 
@@ -87,20 +86,24 @@ public class MainActivity extends AppCompatActivity {
 
         new Thread(() -> {
             if (sessionManager.createSession()) {
-                runOnUiThread(() -> {
-                    Toast.makeText(MainActivity.this, "会话创建成功", Toast.LENGTH_SHORT).show();
-                    recordButton.setEnabled(true);
-                });
                 // 创建WebSocket客户端.
                 sessionManager.connectWebSocket(audioHandler);
                 // 设置相互引用.
                 audioHandler.setWebSocketClient(sessionManager.getWebSocketClient());
-
-                String statusString = "Session ID: " + sessionManager.getSessionId();
-                runOnUiThread(() -> statusText.setText(statusString));
+                runOnUiThread(() -> {
+                    // 开始录音.
+                    audioHandler.startRecording();
+                    // ui表现.
+                    Toast.makeText(MainActivity.this, "会话创建成功！", Toast.LENGTH_SHORT).show();
+                    binding.gifView.setVisibility(View.VISIBLE);
+                    staticPic.setVisibility(View.GONE);
+                    recordButton.setText("停止交流");
+                    Log.d(TAG, "会话创建成功！");
+                });
             } else {
                 runOnUiThread(() -> {
-                    statusText.setText("会话创建失败");
+                    Toast.makeText(MainActivity.this, "会话创建失败！", Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, "会话创建失败！");
                 });
             }
         }).start();
@@ -109,20 +112,12 @@ public class MainActivity extends AppCompatActivity {
     // 开始交流.
     public void startChatting(View view) {
         if(recordButton.getText() == "开始交流"){
+
             initAll(view);
 
-            // 开始录音.
-            audioHandler.startRecording();
-
-            // ui表现.
-            binding.gifView.setVisibility(View.VISIBLE);
-            staticPic.setVisibility(View.GONE);
-            recordButton.setText("停止交流");
         }else{
-            //关闭会话
+            //关闭会话.
             closeAll();
-            statusText.setText("会话已关闭");
-//            recordButton.setEnabled(false);
 
             // ui表现.
             binding.gifView.setVisibility(View.GONE);
@@ -140,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
             if (audioHandler != null) {
                 audioHandler.stopRecording();
             }
-            Log.d(TAG, "交流停止");
+            Log.d(TAG, "关闭所有");
         } catch (Exception e) {
             Log.e("MainActivity", "关闭资源时出错: " + e.getMessage());
         }
@@ -173,6 +168,18 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "需要录音权限才能使用此功能", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    // 实现重连失败回调
+    @Override
+    public void onReconnectFailed() {
+        Log.d(TAG, "重连失败达到最大次数，停止会话");
+        Toast.makeText(this, "重连失败达到最大次数，退出会话...", Toast.LENGTH_SHORT).show();
+
+        closeAll();
+        binding.gifView.setVisibility(View.GONE);
+        staticPic.setVisibility(View.VISIBLE);
+        recordButton.setText("开始交流");
     }
 
     @Override
