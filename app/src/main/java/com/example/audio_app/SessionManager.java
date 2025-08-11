@@ -14,6 +14,7 @@ public class SessionManager {
     private final OkHttpClient client;
     private String sessionId;
     private WebSocketClient webSocketClient;
+    private WebSocketClient.ReconnectFailedCallback reconnectCallback;
 
     public SessionManager() {
         this.client = new OkHttpClient.Builder()
@@ -46,7 +47,11 @@ public class SessionManager {
 
     public void connectWebSocket(AudioHandler audioHandler) {
         if (sessionId != null) {
-            this.webSocketClient = new WebSocketClient(sessionId, audioHandler);
+            this.webSocketClient = new WebSocketClient(sessionId, audioHandler, null); // 暂时传null
+            // 设置回调
+            if (webSocketClient != null && reconnectCallback != null) {
+                webSocketClient.setReconnectFailedCallback(reconnectCallback);
+            }
         }
     }
 
@@ -63,5 +68,14 @@ public class SessionManager {
 
     public WebSocketClient getWebSocketClient() {
         return webSocketClient;
+    }
+
+    // 新增：设置重连失败回调
+    public void setReconnectFailedCallback(WebSocketClient.ReconnectFailedCallback callback) {
+        this.reconnectCallback = callback;
+        // 如果WebSocketClient已存在，也设置回调
+        if (webSocketClient != null) {
+            webSocketClient.setReconnectFailedCallback(callback);
+        }
     }
 }

@@ -19,11 +19,12 @@ import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import okhttp3.Response;
 import static com.example.audio_app.Config.*;
+import android.content.Context;
 
 public class WebSocketClient {
     private static final String TAG = "WebSocketClient";
     private static final int NORMAL_CLOSURE_STATUS = 1000;
-    private static final int MAX_RECONNECT_ATTEMPTS = 5; // 最大重连次数
+    private static final int MAX_RECONNECT_ATTEMPTS = 3; // 最大重连次数
     private static final long RECONNECT_DELAY_MS = 1000; // 重连延迟时间
 
     private WebSocket webSocket;
@@ -40,10 +41,18 @@ public class WebSocketClient {
     private boolean shouldReconnect = true;
     private int reconnectAttempts = 0;
     private final Object reconnectLock = new Object();
+    private Context context;
+    private ReconnectFailedCallback reconnectFailedCallback;
 
-    public WebSocketClient(String sessionId, AudioHandler audioHandler) {
+    // 重连失败回调接口
+    public interface ReconnectFailedCallback {
+        void onReconnectFailed();
+    }
+
+    public WebSocketClient(String sessionId, AudioHandler audioHandler, Context context) {
         this.audioHandler = audioHandler;
         this.sessionId = sessionId;
+        this.context = context; // 现在可以正常赋值了
 
         // 配置OkHttpClient (添加超时设置等).
         this.client = new OkHttpClient.Builder()
@@ -52,6 +61,11 @@ public class WebSocketClient {
                 .build();
 
         connect(sessionId);
+    }
+
+    // 设置回调
+    public void setReconnectFailedCallback(ReconnectFailedCallback callback) {
+        this.reconnectFailedCallback = callback;
     }
 
     private void connect(String sessionId) {
@@ -155,9 +169,18 @@ public class WebSocketClient {
 
     // 调度重连
     private void scheduleReconnect() {
+
+        // 如果达到最大尝试次数 ，通知回调停止会话.
         synchronized (reconnectLock) {
             if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-                Log.e(TAG, "达到最大重连次数，停止重连");
+                if (reconnectFailedCallback != null) {
+                    new android.os.Handler(android.os.Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            reconnectFailedCallback.onReconnectFailed();
+                        }
+                    });
+                }
                 return;
             }
 
@@ -280,7 +303,7 @@ public class WebSocketClient {
         synchronized (reconnectLock) {
             shouldReconnect = false; // 停止自动重连
         }
-        
+
         if (webSocket != null) {
             webSocket.close(NORMAL_CLOSURE_STATUS, "用户主动关闭");
         }
