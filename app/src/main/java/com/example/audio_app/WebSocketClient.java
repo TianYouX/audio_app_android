@@ -52,7 +52,7 @@ public class WebSocketClient {
     public WebSocketClient(String sessionId, AudioHandler audioHandler, Context context) {
         this.audioHandler = audioHandler;
         this.sessionId = sessionId;
-        this.context = context; // 现在可以正常赋值了
+        this.context = context;
 
         // 配置OkHttpClient (添加超时设置等).
         this.client = new OkHttpClient.Builder()
