@@ -255,17 +255,17 @@ public class AudioHandler {
                     aec.setEnabled(false);
                 }
             } catch (IllegalStateException e) {
-                Log.e(TAG, "AEC禁用时出错: " + e.getMessage());
+                Log.w(TAG, "AEC禁用时出错: " + e.getMessage());
             } catch (Exception e) {
-                Log.e(TAG, "AEC禁用时发生未知错误: " + e.getMessage());
+                Log.w(TAG, "AEC禁用时发生未知错误: " + e.getMessage());
             }
 
             try {
                 aec.release();
             } catch (IllegalStateException e) {
-                Log.e(TAG, "AEC释放时出错: " + e.getMessage());
+                Log.w(TAG, "AEC释放时出错: " + e.getMessage());
             } catch (Exception e) {
-                Log.e(TAG, "AEC释放时发生未知错误: " + e.getMessage());
+                Log.w(TAG, "AEC释放时发生未知错误: " + e.getMessage());
             }
 
             aec = null;
