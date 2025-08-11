@@ -20,16 +20,6 @@ import java.util.concurrent.TimeUnit;
 import okhttp3.Response;
 import static com.example.audio_app.Config.*;
 import android.content.Context;
-import android.app.Dialog;
-import android.content.Context;
-import android.os.Bundle;
-import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
-import android.widget.Button;
-import android.widget.ProgressBar;
-import android.widget.TextView;
-import android.util.Log;
 
 public class WebSocketClient {
     private static final String TAG = "WebSocketClient";
@@ -54,8 +44,6 @@ public class WebSocketClient {
     private Context context;
     private ReconnectFailedCallback reconnectFailedCallback;
 
-    private LoadingDialog loadingDialog;
-
     // 重连失败回调接口
     public interface ReconnectFailedCallback {
         void onReconnectFailed();
@@ -64,13 +52,7 @@ public class WebSocketClient {
     public WebSocketClient(String sessionId, AudioHandler audioHandler, Context context) {
         this.audioHandler = audioHandler;
         this.sessionId = sessionId;
-        this.context = context;
-
-        // 创建loading弹窗
-        if (context != null) {
-            loadingDialog = new LoadingDialog(context);
-            loadingDialog.setMaxAttempts(MAX_RECONNECT_ATTEMPTS);
-        }
+        this.context = context; // 现在可以正常赋值了
 
         // 配置OkHttpClient (添加超时设置等).
         this.client = new OkHttpClient.Builder()
@@ -105,11 +87,6 @@ public class WebSocketClient {
                 isConnected = true;
                 reconnectAttempts = 0; // 连接成功后重置重连计数
                 Log.d(TAG, "WebSocket连接已建立");
-                
-                // 显示重连成功
-                if (loadingDialog != null && loadingDialog.isReconnecting()) {
-                    loadingDialog.onReconnectSuccess();
-                }
             }
 
             @Override
@@ -181,12 +158,7 @@ public class WebSocketClient {
                     Log.e(TAG, "响应码: " + response.code());
                     Log.e(TAG, "响应信息: " + response.message());
                 }
-                
-                // 显示loading弹窗
-                if (loadingDialog != null && !loadingDialog.isReconnecting()) {
-                    loadingDialog.startReconnecting();
-                }
-                
+
                 // 连接失败时尝试重连
                 if (shouldReconnect) {
                     scheduleReconnect();
@@ -201,14 +173,6 @@ public class WebSocketClient {
         // 如果达到最大尝试次数 ，通知回调停止会话.
         synchronized (reconnectLock) {
             if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-                Log.e(TAG, "达到最大重连次数，通知创建新session");
-                
-                // 显示重连失败
-                if (loadingDialog != null) {
-                    loadingDialog.onReconnectFailed();
-                }
-                
-                // 通知回调创建新session
                 if (reconnectFailedCallback != null) {
                     new android.os.Handler(android.os.Looper.getMainLooper()).post(new Runnable() {
                         @Override
@@ -219,15 +183,10 @@ public class WebSocketClient {
                 }
                 return;
             }
-            
+
             reconnectAttempts++;
             Log.d(TAG, "计划重连，第 " + reconnectAttempts + " 次尝试");
-            
-            // 更新loading弹窗
-            if (loadingDialog != null) {
-                loadingDialog.updateAttempt(reconnectAttempts);
-            }
-            
+
             // 使用Handler延迟执行重连
             new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() {
                 @Override
@@ -420,12 +379,5 @@ public class WebSocketClient {
         System.arraycopy(pcmData, 0, wavData, header.length, pcmData.length);
 
         return wavData;
-    }
-
-    // 设置取消重连监听器
-    public void setOnCancelReconnectListener(LoadingDialog.OnCancelListener listener) {
-        if (loadingDialog != null) {
-            loadingDialog.setOnCancelListener(listener);
-        }
     }
 }

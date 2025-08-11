@@ -77,24 +77,6 @@ public class MainActivity extends AppCompatActivity implements WebSocketClient.R
         audioHandler = new AudioHandler(getApplicationContext());
         sessionManager = new SessionManager();
         sessionManager.setReconnectFailedCallback(this); // 设置回调
-        
-        // 设置取消重连监听器
-        if (sessionManager.getWebSocketClient() != null) {
-            sessionManager.getWebSocketClient().setOnCancelReconnectListener(new LoadingDialog.OnCancelListener() {
-                @Override
-                public void onCancelReconnect() {
-                    Log.d(TAG, "用户取消重连");
-                    Toast.makeText(MainActivity.this, "已取消重连", Toast.LENGTH_SHORT).show();
-                    
-                    // 停止重连并关闭会话
-                    closeAll();
-                    binding.gifView.setVisibility(View.GONE);
-                    staticPic.setVisibility(View.VISIBLE);
-                    recordButton.setText("开始交流");
-                }
-            });
-        }
-        
         recordButton.setText("开始交流");
     }
 
@@ -104,24 +86,16 @@ public class MainActivity extends AppCompatActivity implements WebSocketClient.R
 
         new Thread(() -> {
             if (sessionManager.createSession()) {
+                runOnUiThread(() -> {
+                    Toast.makeText(MainActivity.this, "会话创建成功！", Toast.LENGTH_SHORT).show();
+                });
                 // 创建WebSocket客户端.
                 sessionManager.connectWebSocket(audioHandler);
                 // 设置相互引用.
                 audioHandler.setWebSocketClient(sessionManager.getWebSocketClient());
-                runOnUiThread(() -> {
-                    // 开始录音.
-                    audioHandler.startRecording();
-                    // ui表现.
-                    Toast.makeText(MainActivity.this, "会话创建成功！", Toast.LENGTH_SHORT).show();
-                    binding.gifView.setVisibility(View.VISIBLE);
-                    staticPic.setVisibility(View.GONE);
-                    recordButton.setText("停止交流");
-                    Log.d(TAG, "会话创建成功！");
-                });
             } else {
                 runOnUiThread(() -> {
                     Toast.makeText(MainActivity.this, "会话创建失败！", Toast.LENGTH_SHORT).show();
-                    Log.d(TAG, "会话创建失败！");
                 });
             }
         }).start();
@@ -131,6 +105,14 @@ public class MainActivity extends AppCompatActivity implements WebSocketClient.R
     public void startChatting(View view) {
         if(recordButton.getText() == "开始交流"){
             initAll(view);
+
+            // 开始录音.
+            audioHandler.startRecording();
+
+            // ui表现.
+            binding.gifView.setVisibility(View.VISIBLE);
+            staticPic.setVisibility(View.GONE);
+            recordButton.setText("停止交流");
         }else{
             //关闭会话.
             closeAll();
@@ -151,7 +133,7 @@ public class MainActivity extends AppCompatActivity implements WebSocketClient.R
             if (audioHandler != null) {
                 audioHandler.stopRecording();
             }
-            Log.d(TAG, "关闭所有");
+            Log.d(TAG, "交流停止");
         } catch (Exception e) {
             Log.e("MainActivity", "关闭资源时出错: " + e.getMessage());
         }
