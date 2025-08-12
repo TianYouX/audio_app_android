@@ -130,7 +130,7 @@ public class AudioHandler {
     private void recordingLoop() {
         byte[] chunk = new byte[FRAMES_PER_BUFFER]; // 2048个字节（即一帧
         //------------回声消除AEC------------
-        byte[] processedBuffer = new byte[FRAMES_PER_BUFFER];
+//        byte[] processedBuffer = new byte[FRAMES_PER_BUFFER];
         //------------回声消除AEC------------
 
         audioRecord.startRecording(); // 不是上面的那个startRecording.
@@ -322,7 +322,7 @@ public class AudioHandler {
         float rms = calculateRms(pcmData, length);
 
         // 检查是否有静音数据
-        boolean isSilent = rms < 10; // 非常小的RMS值可能表示静音
+        boolean isSilent = rms < 10;
 
         // 检查数据范围
         short maxSample = 0;
