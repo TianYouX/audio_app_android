@@ -100,7 +100,7 @@ public class AudioHandler {
                     RECORD_RATE,
                     RECORD_CHANNELS,
                     RECORD_FORMAT,
-                    bufferSize * 3);
+                    bufferSize * 3); // 三倍buffersize
 
             //------------回声消除AEC------------
             if (audioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
@@ -127,7 +127,7 @@ public class AudioHandler {
         byte[] processedBuffer = new byte[FRAMES_PER_BUFFER];
         //------------回声消除AEC------------
 
-        audioRecord.startRecording();
+        audioRecord.startRecording(); // 不是上面的那个startRecording.
         Log.d(TAG, "开始Recording Loop!");
 
         try {
@@ -143,15 +143,15 @@ public class AudioHandler {
                 }
 
                 //------------回声消除AEC------------
-                // 如果AEC启用，处理音频数据
-                if (aecEnabled) {
-                    System.arraycopy(buffer, 0, processedBuffer, 0, bytesRead);
-                    // 这里可以添加更复杂的AEC处理逻辑
-                    // 目前只是简单传递，硬件AEC已经在底层工作
-                } else {
-                    System.arraycopy(buffer, 0, processedBuffer, 0, bytesRead);
-                }
-                buffer = processedBuffer;
+//                // 如果AEC启用，处理音频数据
+//                if (aecEnabled) {
+//                    System.arraycopy(buffer, 0, processedBuffer, 0, bytesRead);
+//                    // 这里可以添加更复杂的AEC处理逻辑
+//                    // 目前只是简单传递，硬件AEC已经在底层工作
+//                } else {
+//                    System.arraycopy(buffer, 0, processedBuffer, 0, bytesRead);
+//                }
+//                buffer = processedBuffer;
                 //------------回声消除AEC------------
 
                 processAudioChunk(buffer, bytesRead);
