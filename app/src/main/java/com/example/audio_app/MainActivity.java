@@ -47,6 +47,7 @@ public class MainActivity extends AppCompatActivity implements WebSocketClient.R
 
         setContentView(R.layout.activity_main);
 
+        // 主页面创建时检查麦克风权限有没有打开.
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -90,9 +91,9 @@ public class MainActivity extends AppCompatActivity implements WebSocketClient.R
                 sessionManager.connectWebSocket(audioHandler);
                 // 设置相互引用.
                 audioHandler.setWebSocketClient(sessionManager.getWebSocketClient());
+                // 启动录音.
+                audioHandler.startRecording();
                 runOnUiThread(() -> {
-                    // 开始录音.
-                    audioHandler.startRecording();
                     // ui表现.
                     Toast.makeText(MainActivity.this, "会话创建成功！", Toast.LENGTH_SHORT).show();
                     binding.gifView.setVisibility(View.VISIBLE);

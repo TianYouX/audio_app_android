@@ -100,7 +100,7 @@ public class AudioHandler {
                     RECORD_RATE,
                     RECORD_CHANNELS,
                     RECORD_FORMAT,
-                    bufferSize);
+                    bufferSize * 3);
 
             //------------回声消除AEC------------
             if (audioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
@@ -335,6 +335,19 @@ public class AudioHandler {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         String fileName = "recording_" + timeStamp + ".wav";
         File outputFile = new File(recordingsDir, fileName);
+
+//        // 保存原始PCM数据用于对比
+//        try {
+//            String pcmFileName = "recording_" + timeStamp + ".pcm";
+//            File pcmFile = new File(recordingsDir, pcmFileName);
+//            try (FileOutputStream pcmFos = new FileOutputStream(pcmFile)) {
+//                pcmFos.write(pcmData);
+//                pcmFos.flush();
+//                Log.d(TAG, "PCM数据已保存: " + pcmFile.getAbsolutePath() + ", 大小: " + pcmData.length + " 字节");
+//            }
+//        } catch (IOException e) {
+//            Log.e(TAG, "保存PCM数据失败", e);
+//        }
 
         try (FileOutputStream fos = new FileOutputStream(outputFile)) {
             byte[] wavData = webSocketClient.convertPcmToWav(pcmData);
