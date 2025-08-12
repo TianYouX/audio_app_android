@@ -115,7 +115,13 @@ public class AudioHandler {
             }
             Log.d(TAG, "AudioRecord初始化成功");
             isRecording = true;
-            new Thread(this::recordingLoop).start();
+
+//            new Thread(this::recordingLoop).start();
+            new Thread(() -> {
+                Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+                recordingLoop();
+            }).start();
+
         } catch (IllegalArgumentException e) {
             Log.e(TAG, "录音参数错误: " + e.getMessage());
         }
@@ -177,6 +183,7 @@ public class AudioHandler {
 //        Log.d(TAG, "rms:"+rms);
         if (rms > SILENCE_THRESHOLD) {
             //检测到声音.
+            silenceStartTime = null;
             handleVoiceActive();
         } else {
             //检测到静默.
@@ -185,7 +192,6 @@ public class AudioHandler {
     }
 
     private void handleVoiceActive() {
-        silenceStartTime = null;
         if (!isVoiceActive) {
             // 开始声音活动，将预缓存的音频块复制到result数组中.
             isVoiceActive = true;
@@ -235,6 +241,8 @@ public class AudioHandler {
             Log.d(TAG, String.format("静默≥%.1fs，发送音频并 commit", LONG_SILENCE_DURATION));
             isVoiceActive = false;
             isRecording = false;
+        } else {
+            handleVoiceActive();
         }
     }
 
