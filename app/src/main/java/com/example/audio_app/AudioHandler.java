@@ -122,7 +122,7 @@ public class AudioHandler {
     }
 
     private void recordingLoop() {
-        byte[] buffer = new byte[FRAMES_PER_BUFFER]; // 2048个字节（即一帧
+        byte[] chunk = new byte[FRAMES_PER_BUFFER]; // 2048个字节（即一帧
         //------------回声消除AEC------------
         byte[] processedBuffer = new byte[FRAMES_PER_BUFFER];
         //------------回声消除AEC------------
@@ -132,7 +132,7 @@ public class AudioHandler {
 
         try {
             while (isRecording) {
-                int bytesRead = audioRecord.read(buffer, 0, buffer.length); // 把音频写入buffer数组，返回读取到的字节数
+                int bytesRead = audioRecord.read(chunk, 0, chunk.length); // 把音频写入buffer数组，返回读取到的字节数
                 if (bytesRead <= 0) {
                     if (bytesRead == AudioRecord.ERROR_INVALID_OPERATION) {
                         Log.e(TAG, "无效的录音操作");
@@ -145,16 +145,16 @@ public class AudioHandler {
                 //------------回声消除AEC------------
 //                // 如果AEC启用，处理音频数据
 //                if (aecEnabled) {
-//                    System.arraycopy(buffer, 0, processedBuffer, 0, bytesRead);
+//                    System.arraycopy(chunk, 0, processedBuffer, 0, bytesRead);
 //                    // 这里可以添加更复杂的AEC处理逻辑
 //                    // 目前只是简单传递，硬件AEC已经在底层工作
 //                } else {
-//                    System.arraycopy(buffer, 0, processedBuffer, 0, bytesRead);
+//                    System.arraycopy(chunk, 0, processedBuffer, 0, bytesRead);
 //                }
-//                buffer = processedBuffer;
+//                chunk = processedBuffer;
                 //------------回声消除AEC------------
 
-                processAudioChunk(buffer, bytesRead);
+                processAudioChunk(chunk, bytesRead);
             }
         } finally {
             // 停止录音并发送剩下语音.
@@ -200,7 +200,7 @@ public class AudioHandler {
             Log.d(TAG, "检测到声音，开始录音，包含预缓存");
         } else {
             // 继续累计声音.
-            byte[] newBuffer = new byte[accumulatedAudio.length + FRAMES_PER_BUFFER];
+            byte[] newBuffer = new byte[accumulatedAudio.length + FRAMES_PER_BUFFER]; // 拓展一帧.
             System.arraycopy(accumulatedAudio, 0, newBuffer, 0, accumulatedAudio.length);
             System.arraycopy(preAudioBuffer.getLast(), 0, newBuffer, accumulatedAudio.length, FRAMES_PER_BUFFER);
             accumulatedAudio = newBuffer;
@@ -222,7 +222,7 @@ public class AudioHandler {
         if (silenceDuration >= SHORT_SILENCE_DURATION && silenceDuration < LONG_SILENCE_DURATION) {
             // 短静默，发送audio但不commit.
             if (accumulatedAudio.length > 0) {
-                if (accumulatedAudio.length > (5 + 1 + 1) * FRAMES_PER_BUFFER) {
+                if (accumulatedAudio.length > (5 + 1 + 1) * FRAMES_PER_BUFFER) { // 至少在预缓存5帧的基础上多3帧
                     Log.d(TAG, String.format("静默≥%.1fs，先发送音频（不 commit）", SHORT_SILENCE_DURATION));
                     sendAudioSegment(accumulatedAudio);
                 } else {
