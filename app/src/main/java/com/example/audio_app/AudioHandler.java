@@ -122,7 +122,7 @@ public class AudioHandler {
     }
 
     private void recordingLoop() {
-        byte[] buffer = new byte[FRAMES_PER_BUFFER];
+        byte[] buffer = new byte[FRAMES_PER_BUFFER]; // 2048个字节（即一帧
         //------------回声消除AEC------------
         byte[] processedBuffer = new byte[FRAMES_PER_BUFFER];
         //------------回声消除AEC------------
@@ -132,7 +132,7 @@ public class AudioHandler {
 
         try {
             while (isRecording) {
-                int bytesRead = audioRecord.read(buffer, 0, buffer.length);
+                int bytesRead = audioRecord.read(buffer, 0, buffer.length); // 把音频写入buffer数组，返回读取到的字节数
                 if (bytesRead <= 0) {
                     if (bytesRead == AudioRecord.ERROR_INVALID_OPERATION) {
                         Log.e(TAG, "无效的录音操作");
@@ -167,7 +167,7 @@ public class AudioHandler {
 
         // 预缓存最近五帧.
         if (preAudioBuffer.size() >= 5) {
-            preAudioBuffer.removeFirst();
+            preAudioBuffer.removeFirst(); // 达到或超过5个音频chunk，就移除最老的一块.
         }
         preAudioBuffer.addLast(chunk.clone());
 
@@ -187,7 +187,7 @@ public class AudioHandler {
     private void handleVoiceActive() {
         silenceStartTime = null;
         if (!isVoiceActive) {
-            // 开始声音活动，包括pre-buffer.
+            // 开始声音活动，将预缓存的音频块复制到result数组中.
             isVoiceActive = true;
             int totalLength = preAudioBuffer.stream().mapToInt(b -> b.length).sum();
             byte[] result = new byte[totalLength];
