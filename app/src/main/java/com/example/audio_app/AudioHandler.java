@@ -100,7 +100,7 @@ public class AudioHandler {
                     RECORD_RATE,
                     RECORD_CHANNELS,
                     RECORD_FORMAT,
-                    bufferSize);
+                    bufferSize * 3); // 三倍buffersize
 
             //------------回声消除AEC------------
             if (audioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
@@ -115,24 +115,30 @@ public class AudioHandler {
             }
             Log.d(TAG, "AudioRecord初始化成功");
             isRecording = true;
-            new Thread(this::recordingLoop).start();
+
+//            new Thread(this::recordingLoop).start();
+            new Thread(() -> {
+                Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+                recordingLoop();
+            }).start();
+
         } catch (IllegalArgumentException e) {
             Log.e(TAG, "录音参数错误: " + e.getMessage());
         }
     }
 
     private void recordingLoop() {
-        byte[] buffer = new byte[FRAMES_PER_BUFFER];
+        byte[] chunk = new byte[FRAMES_PER_BUFFER]; // 2048个字节（即一帧
         //------------回声消除AEC------------
-        byte[] processedBuffer = new byte[FRAMES_PER_BUFFER];
+//        byte[] processedBuffer = new byte[FRAMES_PER_BUFFER];
         //------------回声消除AEC------------
 
-        audioRecord.startRecording();
+        audioRecord.startRecording(); // 不是上面的那个startRecording.
         Log.d(TAG, "开始Recording Loop!");
 
         try {
             while (isRecording) {
-                int bytesRead = audioRecord.read(buffer, 0, buffer.length);
+                int bytesRead = audioRecord.read(chunk, 0, chunk.length); // 把音频写入buffer数组，返回读取到的字节数
                 if (bytesRead <= 0) {
                     if (bytesRead == AudioRecord.ERROR_INVALID_OPERATION) {
                         Log.e(TAG, "无效的录音操作");
@@ -143,18 +149,18 @@ public class AudioHandler {
                 }
 
                 //------------回声消除AEC------------
-                // 如果AEC启用，处理音频数据
-                if (aecEnabled) {
-                    System.arraycopy(buffer, 0, processedBuffer, 0, bytesRead);
-                    // 这里可以添加更复杂的AEC处理逻辑
-                    // 目前只是简单传递，硬件AEC已经在底层工作
-                } else {
-                    System.arraycopy(buffer, 0, processedBuffer, 0, bytesRead);
-                }
-                buffer = processedBuffer;
+//                // 如果AEC启用，处理音频数据
+//                if (aecEnabled) {
+//                    System.arraycopy(chunk, 0, processedBuffer, 0, bytesRead);
+//                    // 这里可以添加更复杂的AEC处理逻辑
+//                    // 目前只是简单传递，硬件AEC已经在底层工作
+//                } else {
+//                    System.arraycopy(chunk, 0, processedBuffer, 0, bytesRead);
+//                }
+//                chunk = processedBuffer;
                 //------------回声消除AEC------------
 
-                processAudioChunk(buffer, bytesRead);
+                processAudioChunk(chunk, bytesRead);
             }
         } finally {
             // 停止录音并发送剩下语音.
@@ -167,7 +173,7 @@ public class AudioHandler {
 
         // 预缓存最近五帧.
         if (preAudioBuffer.size() >= 5) {
-            preAudioBuffer.removeFirst();
+            preAudioBuffer.removeFirst(); // 达到或超过5个音频chunk，就移除最老的一块.
         }
         preAudioBuffer.addLast(chunk.clone());
 
@@ -177,6 +183,7 @@ public class AudioHandler {
 //        Log.d(TAG, "rms:"+rms);
         if (rms > SILENCE_THRESHOLD) {
             //检测到声音.
+            silenceStartTime = null;
             handleVoiceActive();
         } else {
             //检测到静默.
@@ -185,9 +192,8 @@ public class AudioHandler {
     }
 
     private void handleVoiceActive() {
-        silenceStartTime = null;
         if (!isVoiceActive) {
-            // 开始声音活动，包括pre-buffer.
+            // 开始声音活动，将预缓存的音频块复制到result数组中.
             isVoiceActive = true;
             int totalLength = preAudioBuffer.stream().mapToInt(b -> b.length).sum();
             byte[] result = new byte[totalLength];
@@ -200,7 +206,7 @@ public class AudioHandler {
             Log.d(TAG, "检测到声音，开始录音，包含预缓存");
         } else {
             // 继续累计声音.
-            byte[] newBuffer = new byte[accumulatedAudio.length + FRAMES_PER_BUFFER];
+            byte[] newBuffer = new byte[accumulatedAudio.length + FRAMES_PER_BUFFER]; // 拓展一帧.
             System.arraycopy(accumulatedAudio, 0, newBuffer, 0, accumulatedAudio.length);
             System.arraycopy(preAudioBuffer.getLast(), 0, newBuffer, accumulatedAudio.length, FRAMES_PER_BUFFER);
             accumulatedAudio = newBuffer;
@@ -222,7 +228,7 @@ public class AudioHandler {
         if (silenceDuration >= SHORT_SILENCE_DURATION && silenceDuration < LONG_SILENCE_DURATION) {
             // 短静默，发送audio但不commit.
             if (accumulatedAudio.length > 0) {
-                if (accumulatedAudio.length > (5 + 1 + 1) * FRAMES_PER_BUFFER) {
+                if (accumulatedAudio.length > (5 + 1 + 1) * FRAMES_PER_BUFFER) { // 至少在预缓存5帧的基础上多3帧
                     Log.d(TAG, String.format("静默≥%.1fs，先发送音频（不 commit）", SHORT_SILENCE_DURATION));
                     sendAudioSegment(accumulatedAudio);
                 } else {
@@ -235,6 +241,8 @@ public class AudioHandler {
             Log.d(TAG, String.format("静默≥%.1fs，发送音频并 commit", LONG_SILENCE_DURATION));
             isVoiceActive = false;
             isRecording = false;
+        } else {
+            handleVoiceActive();
         }
     }
 
@@ -255,17 +263,17 @@ public class AudioHandler {
                     aec.setEnabled(false);
                 }
             } catch (IllegalStateException e) {
-                Log.e(TAG, "AEC禁用时出错: " + e.getMessage());
+                Log.w(TAG, "AEC禁用时出错: " + e.getMessage());
             } catch (Exception e) {
-                Log.e(TAG, "AEC禁用时发生未知错误: " + e.getMessage());
+                Log.w(TAG, "AEC禁用时发生未知错误: " + e.getMessage());
             }
 
             try {
                 aec.release();
             } catch (IllegalStateException e) {
-                Log.e(TAG, "AEC释放时出错: " + e.getMessage());
+                Log.w(TAG, "AEC释放时出错: " + e.getMessage());
             } catch (Exception e) {
-                Log.e(TAG, "AEC释放时发生未知错误: " + e.getMessage());
+                Log.w(TAG, "AEC释放时发生未知错误: " + e.getMessage());
             }
 
             aec = null;
@@ -314,7 +322,7 @@ public class AudioHandler {
         float rms = calculateRms(pcmData, length);
 
         // 检查是否有静音数据
-        boolean isSilent = rms < 10; // 非常小的RMS值可能表示静音
+        boolean isSilent = rms < 10;
 
         // 检查数据范围
         short maxSample = 0;
@@ -335,6 +343,19 @@ public class AudioHandler {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         String fileName = "recording_" + timeStamp + ".wav";
         File outputFile = new File(recordingsDir, fileName);
+
+//        // 保存原始PCM数据用于对比
+//        try {
+//            String pcmFileName = "recording_" + timeStamp + ".pcm";
+//            File pcmFile = new File(recordingsDir, pcmFileName);
+//            try (FileOutputStream pcmFos = new FileOutputStream(pcmFile)) {
+//                pcmFos.write(pcmData);
+//                pcmFos.flush();
+//                Log.d(TAG, "PCM数据已保存: " + pcmFile.getAbsolutePath() + ", 大小: " + pcmData.length + " 字节");
+//            }
+//        } catch (IOException e) {
+//            Log.e(TAG, "保存PCM数据失败", e);
+//        }
 
         try (FileOutputStream fos = new FileOutputStream(outputFile)) {
             byte[] wavData = webSocketClient.convertPcmToWav(pcmData);
