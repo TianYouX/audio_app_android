@@ -8,10 +8,9 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -22,8 +21,6 @@ import com.example.audio_app.databinding.ActivityMainBinding;
 public class MainActivity extends AppCompatActivity implements WebSocketClient.ReconnectFailedCallback {
     private static final String TAG = "MainActivityCheck";
     private Button recordButton;
-    private Button sessionButton;
-    private LinearLayout homeLayout;
     private AudioHandler audioHandler;
     private SessionManager sessionManager;
     private ActivityMainBinding binding;
@@ -70,9 +67,7 @@ public class MainActivity extends AppCompatActivity implements WebSocketClient.R
                 .into(binding.gifView);
 
 
-        sessionButton = findViewById(R.id.session_button);
         recordButton = findViewById(R.id.record_button);
-        homeLayout = findViewById(R.id.home_layout);
         staticPic = findViewById(R.id.static_pic);
 
         audioHandler = new AudioHandler(getApplicationContext());
@@ -161,7 +156,7 @@ public class MainActivity extends AppCompatActivity implements WebSocketClient.R
     // ------------测试回音消除------------
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         if (requestCode == 1001 && grantResults.length > 0) {

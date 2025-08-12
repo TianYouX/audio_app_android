@@ -320,7 +320,7 @@ public class WebSocketClient {
         isConnected = false;
     }
 
-    // 将pcm转换成wav，加上正确的header.
+    // 将pcm转换成wav，加上正确的header. (AI)
     public byte[] convertPcmToWav(byte[] pcmData) {
         // wav header参数
         long totalDataLen = pcmData.length + 36; // 36 is the header size

@@ -23,27 +23,6 @@
         android:layout_height="500dp"
         android:src="@drawable/static_ai_voice_pic"/>
 
-    <TextView
-        android:id="@+id/status_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="WELCOME!!!"
-        android:textStyle="bold"
-        android:textSize="25sp"
-        android:layout_marginTop="32dp"
-        android:textColor="#777777"
-        android:visibility="gone"/>
-
-    <Button
-        android:id="@+id/session_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:text="初始化"
-        android:textSize="25sp"
-        android:onClick="initAll"
-        android:visibility="gone"/>
-
     <Button
         android:id="@+id/record_button"
         android:layout_width="wrap_content"
