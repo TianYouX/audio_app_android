@@ -69,17 +69,16 @@ public class AudioHandler {
                     RECORD_FORMAT,
                     bufferSize * 3); // 三倍buffersize
 
-            //------------回声消除AEC------------
-            if (audioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
-                aecManager.initAEC(audioRecord.getAudioSessionId());
-                aecManager.setCommunicationAudioMode();
-            }
-            //------------回声消除AEC------------
-
             if (audioRecord.getState() != AudioRecord.STATE_INITIALIZED) {
                 Log.e(TAG, "AudioRecord初始化失败");
                 return;
             }
+
+            //------------回声消除AEC------------
+            aecManager.initAEC(audioRecord.getAudioSessionId());
+            aecManager.setCommunicationAudioMode();
+            //------------回声消除AEC------------
+
             Log.d(TAG, "AudioRecord初始化成功");
             isRecording = true;
 
