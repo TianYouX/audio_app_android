@@ -242,6 +242,7 @@ public class AudioHandler {
             isVoiceActive = false;
             isRecording = false;
         } else {
+            // 短静默阈值之前的帧保留（防止说话过程中短暂音量低于阈值的丢帧.
             handleVoiceActive();
         }
     }
@@ -332,9 +333,6 @@ public class AudioHandler {
             if (sample > maxSample) maxSample = sample;
             if (sample < minSample) minSample = sample;
         }
-
-        Log.d(TAG, String.format("音频质量检查 - 长度: %d, RMS: %.2f, 范围: [%d, %d], 静音: %s",
-                length, rms, minSample, maxSample, isSilent));
 
         File recordingsDir = new File(context.getExternalFilesDir(null), RECORDINGS_DIR);
         if (!recordingsDir.exists()) {

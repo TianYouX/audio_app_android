@@ -324,7 +324,8 @@ public class WebSocketClient {
     public byte[] convertPcmToWav(byte[] pcmData) {
         // wav header参数
         long totalDataLen = pcmData.length + 36; // 36 is the header size
-        long byteRate = RECORD_RATE * 2; // SampleRate * NumChannels * BitsPerSample/8
+        // 字节率 = 采样率 × 声道数 × 每样本字节数
+        long byteRate = RECORD_RATE * RECORD_CHANNELS * (16 / 8); // 16位 = 2字节
 
         byte[] header = new byte[44];
 
