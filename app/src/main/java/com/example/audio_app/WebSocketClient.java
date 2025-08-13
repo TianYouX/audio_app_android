@@ -303,7 +303,6 @@ public class WebSocketClient {
         synchronized (reconnectLock) {
             shouldReconnect = false; // 停止自动重连
         }
-
         if (webSocket != null) {
             webSocket.close(NORMAL_CLOSURE_STATUS, "用户主动关闭");
         }
@@ -312,9 +311,14 @@ public class WebSocketClient {
         }
         if (audioTrack != null) {
             audioTrack.stop();
+            audioTrack.flush();
             audioTrack.release();
             audioTrack = null;
             isAudioTrackInitialized = false;
+        }
+        synchronized (audioQueue) {
+            audioQueue.clear();
+            isPlaying = false;
         }
         Log.d(TAG, "停止audioTrack");
         isConnected = false;
@@ -324,7 +328,8 @@ public class WebSocketClient {
     public byte[] convertPcmToWav(byte[] pcmData) {
         // wav header参数
         long totalDataLen = pcmData.length + 36; // 36 is the header size
-        long byteRate = RECORD_RATE * 2; // SampleRate * NumChannels * BitsPerSample/8
+        // 字节率 = 采样率 × 声道数 × 每样本字节数
+        long byteRate = RECORD_RATE * RECORD_CHANNELS * (16 / 8); // 16位 = 2字节
 
         byte[] header = new byte[44];
 
