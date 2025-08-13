@@ -3,7 +3,6 @@ package com.example.audio_app;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.util.Log;
@@ -20,8 +19,6 @@ import java.util.Locale;
 
 import static com.example.audio_app.Config.*;
 
-import android.media.audiofx.AcousticEchoCanceler;
-
 public class AudioHandler {
     private static final String TAG = "AudioHandler";
     private AudioRecord audioRecord;
@@ -33,48 +30,18 @@ public class AudioHandler {
     private Long silenceStartTime = null;
     private boolean isVoiceActive = false;
 
-    // ------------回声消除AEC------------
-    private AcousticEchoCanceler aec;
-    private boolean aecEnabled = false;
-    // ------------回声消除AEC------------
+    //------------回声消除AEC------------
+    private final AECManager aecManager;
+    //------------回声消除AEC------------
 
     private static final String RECORDINGS_DIR = "audio_recordings";
 
     public AudioHandler(Context context) {
         this.context = context.getApplicationContext();
+        //------------回声消除AEC------------
+        this.aecManager = new AECManager(context);
+        //------------回声消除AEC------------
     }
-
-    // ------------回声消除AEC------------
-    // 初始化AEC.
-    private void initAEC(int audioSessionId) {
-        if (AcousticEchoCanceler.isAvailable()) {
-            try {
-                if (aec != null) {
-                    aec.release();
-                }
-                aec = AcousticEchoCanceler.create(audioSessionId);
-                if (aec != null) {
-                    aec.setEnabled(true);
-                    aecEnabled = true;
-                    Log.d(TAG, "AEC初始化成功");
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "AEC初始化失败: " + e.getMessage());
-            }
-        } else {
-            Log.w(TAG, "此设备不支持AEC");
-        }
-    }
-
-    // 设置音频模式为通信模式.
-    private void setCommunicationAudioMode() {
-        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-        if (am != null) {
-            am.setMode(AudioManager.MODE_IN_COMMUNICATION);
-            am.setSpeakerphoneOn(true);
-        }
-    }
-    // ------------回声消除AEC------------
 
     public void setWebSocketClient(WebSocketClient client) {
         this.webSocketClient = client;
@@ -104,8 +71,8 @@ public class AudioHandler {
 
             //------------回声消除AEC------------
             if (audioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
-                initAEC(audioRecord.getAudioSessionId());
-                setCommunicationAudioMode();
+                aecManager.initAEC(audioRecord.getAudioSessionId());
+                aecManager.setCommunicationAudioMode();
             }
             //------------回声消除AEC------------
 
@@ -130,7 +97,7 @@ public class AudioHandler {
     private void recordingLoop() {
         byte[] chunk = new byte[FRAMES_PER_BUFFER]; // 2048个字节（即一帧
         //------------回声消除AEC------------
-//        byte[] processedBuffer = new byte[FRAMES_PER_BUFFER];
+        byte[] processedBuffer = new byte[FRAMES_PER_BUFFER];
         //------------回声消除AEC------------
 
         audioRecord.startRecording(); // 不是上面的那个startRecording.
@@ -149,15 +116,9 @@ public class AudioHandler {
                 }
 
                 //------------回声消除AEC------------
-//                // 如果AEC启用，处理音频数据
-//                if (aecEnabled) {
-//                    System.arraycopy(chunk, 0, processedBuffer, 0, bytesRead);
-//                    // 这里可以添加更复杂的AEC处理逻辑
-//                    // 目前只是简单传递，硬件AEC已经在底层工作
-//                } else {
-//                    System.arraycopy(chunk, 0, processedBuffer, 0, bytesRead);
-//                }
-//                chunk = processedBuffer;
+                // 使用AECManager处理音频数据
+                aecManager.processAudio(chunk, processedBuffer, bytesRead);
+                chunk = processedBuffer;
                 //------------回声消除AEC------------
 
                 processAudioChunk(chunk, bytesRead);
@@ -258,27 +219,8 @@ public class AudioHandler {
         safeReleaseAudioRecord();
 
         //------------回声消除AEC------------
-        if (aec != null) {
-            try {
-                if (aecEnabled) {
-                    aec.setEnabled(false);
-                }
-            } catch (IllegalStateException e) {
-                Log.w(TAG, "AEC禁用时出错: " + e.getMessage());
-            } catch (Exception e) {
-                Log.w(TAG, "AEC禁用时发生未知错误: " + e.getMessage());
-            }
-
-            try {
-                aec.release();
-            } catch (IllegalStateException e) {
-                Log.w(TAG, "AEC释放时出错: " + e.getMessage());
-            } catch (Exception e) {
-                Log.w(TAG, "AEC释放时发生未知错误: " + e.getMessage());
-            }
-
-            aec = null;
-            aecEnabled = false;
+        if (aecManager != null) {
+            aecManager.releaseAEC();
         }
         //------------回声消除AEC------------
     }
