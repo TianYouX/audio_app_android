@@ -303,7 +303,6 @@ public class WebSocketClient {
         synchronized (reconnectLock) {
             shouldReconnect = false; // 停止自动重连
         }
-
         if (webSocket != null) {
             webSocket.close(NORMAL_CLOSURE_STATUS, "用户主动关闭");
         }
@@ -312,9 +311,14 @@ public class WebSocketClient {
         }
         if (audioTrack != null) {
             audioTrack.stop();
+            audioTrack.flush();
             audioTrack.release();
             audioTrack = null;
             isAudioTrackInitialized = false;
+        }
+        synchronized (audioQueue) {
+            audioQueue.clear();
+            isPlaying = false;
         }
         Log.d(TAG, "停止audioTrack");
         isConnected = false;
