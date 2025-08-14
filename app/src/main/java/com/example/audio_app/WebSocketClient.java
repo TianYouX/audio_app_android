@@ -112,17 +112,6 @@ public class WebSocketClient {
                         case "response.audio.done":
                             Log.d(TAG, "回复结束标志!");
 
-                            // 回复结束后睡眠2秒.
-                            try {
-                                Log.d(TAG, "睡眠开始!");
-                                Thread.sleep(SLEEP_INTERVAL);
-                                Log.d(TAG, "睡眠完毕!");
-                            } catch (InterruptedException e) {
-                                // Java睡眠需要处理中断异常.
-                                Thread.currentThread().interrupt();
-                                System.err.println("Sleep interrupted: " + e.getMessage());
-                            }
-
                             audioHandler.startRecording();
                             break;
                         default:
