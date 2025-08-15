@@ -308,8 +308,8 @@ public class WebSocketClient {
         synchronized (audioQueue) {
             audioQueue.clear();
             isPlaying = false;
+            Log.d(TAG, "audioQueue清空完成");
         }
-        Log.d(TAG, "停止audioTrack");
         isConnected = false;
     }
 
