@@ -111,18 +111,7 @@ public class WebSocketClient {
                             break;
                         case "response.audio.done":
                             Log.d(TAG, "回复结束标志!");
-
-                            // 回复结束后睡眠2秒.
-                            try {
-                                Log.d(TAG, "睡眠开始!");
-                                Thread.sleep(SLEEP_INTERVAL);
-                                Log.d(TAG, "睡眠完毕!");
-                            } catch (InterruptedException e) {
-                                // Java睡眠需要处理中断异常.
-                                Thread.currentThread().interrupt();
-                                System.err.println("Sleep interrupted: " + e.getMessage());
-                            }
-
+                            resetPlayback();
                             audioHandler.startRecording();
                             break;
                         default:
@@ -299,6 +288,27 @@ public class WebSocketClient {
         }
     }
 
+    private void resetPlayback() {
+
+        synchronized (audioQueue) {
+            audioQueue.clear();
+            isPlaying = false;
+        }
+
+        if (audioTrack != null) {
+            try {
+                if (audioTrack.getPlayState() == AudioTrack.PLAYSTATE_PLAYING) {
+                    audioTrack.pause();
+                }
+                audioTrack.flush();
+                audioTrack.stop();
+            } catch (IllegalStateException ignored) {}
+            try { audioTrack.release(); } catch (Exception ignored) {}
+            audioTrack = null;
+            isAudioTrackInitialized = false;
+        }
+    }
+
     public void close() {
         synchronized (reconnectLock) {
             shouldReconnect = false; // 停止自动重连
@@ -309,18 +319,9 @@ public class WebSocketClient {
         if (client != null) {
             client.dispatcher().executorService().shutdown();
         }
-        if (audioTrack != null) {
-            audioTrack.stop();
-            audioTrack.flush();
-            audioTrack.release();
-            audioTrack = null;
-            isAudioTrackInitialized = false;
-        }
-        synchronized (audioQueue) {
-            audioQueue.clear();
-            isPlaying = false;
-        }
-        Log.d(TAG, "停止audioTrack");
+        // 释放audioTrack和audioQueue
+        resetPlayback();
+
         isConnected = false;
     }
 

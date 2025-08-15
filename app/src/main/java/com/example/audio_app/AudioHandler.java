@@ -67,7 +67,7 @@ public class AudioHandler {
                     RECORD_RATE,
                     RECORD_CHANNELS,
                     RECORD_FORMAT,
-                    bufferSize);
+                    bufferSize * 3);
 
             if (audioRecord.getState() != AudioRecord.STATE_INITIALIZED) {
                 Log.e(TAG, "AudioRecord初始化失败");
@@ -195,6 +195,8 @@ public class AudioHandler {
                     Log.d(TAG, "音频太短，丢弃");
                 }
                 accumulatedAudio = new byte[0];
+                preAudioBuffer.clear();
+//                Log.d(TAG, "短静默后清空预缓存，避免音频重叠");
             }
         } else if (silenceDuration >= LONG_SILENCE_DURATION) {
             // 长静默，发送audio并commit.
