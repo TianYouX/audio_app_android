@@ -111,7 +111,7 @@ public class WebSocketClient {
                             break;
                         case "response.audio.done":
                             Log.d(TAG, "回复结束标志!");
-
+                            resetPlayback();
                             audioHandler.startRecording();
                             break;
                         default:
@@ -288,6 +288,27 @@ public class WebSocketClient {
         }
     }
 
+    private void resetPlayback() {
+
+        synchronized (audioQueue) {
+            audioQueue.clear();
+            isPlaying = false;
+        }
+
+        if (audioTrack != null) {
+            try {
+                if (audioTrack.getPlayState() == AudioTrack.PLAYSTATE_PLAYING) {
+                    audioTrack.pause();
+                }
+                audioTrack.flush();
+                audioTrack.stop();
+            } catch (IllegalStateException ignored) {}
+            try { audioTrack.release(); } catch (Exception ignored) {}
+            audioTrack = null;
+            isAudioTrackInitialized = false;
+        }
+    }
+
     public void close() {
         synchronized (reconnectLock) {
             shouldReconnect = false; // 停止自动重连
@@ -298,18 +319,9 @@ public class WebSocketClient {
         if (client != null) {
             client.dispatcher().executorService().shutdown();
         }
-        if (audioTrack != null) {
-            audioTrack.stop();
-            audioTrack.flush();
-            audioTrack.release();
-            audioTrack = null;
-            isAudioTrackInitialized = false;
-        }
-        synchronized (audioQueue) {
-            audioQueue.clear();
-            isPlaying = false;
-            Log.d(TAG, "audioQueue清空完成");
-        }
+        // 释放audioTrack和audioQueue
+        resetPlayback();
+
         isConnected = false;
     }
 

@@ -67,7 +67,7 @@ public class AudioHandler {
                     RECORD_RATE,
                     RECORD_CHANNELS,
                     RECORD_FORMAT,
-                    bufferSize);
+                    bufferSize * 3);
 
             if (audioRecord.getState() != AudioRecord.STATE_INITIALIZED) {
                 Log.e(TAG, "AudioRecord初始化失败");
